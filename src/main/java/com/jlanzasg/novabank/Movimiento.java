@@ -1,13 +1,15 @@
 package com.jlanzasg.novabank;
 
+import java.text.DateFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Movimiento {
     private long id;
     private String iban;
     private String tipo;
     private double cantidad;
-    private LocalDateTime fecha;
+    private String fecha;
     private static long contadorMovimiento = 0L;
 
     public Movimiento(String iban, String tipo, double cantidad) {
@@ -15,7 +17,8 @@ public class Movimiento {
         this.iban = iban;
         this.tipo = tipo;
         this.cantidad = cantidad;
-        this.fecha = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        fecha = LocalDateTime.now().format(formatter);
     }
 
     public long getId() { return id; }
@@ -44,7 +47,7 @@ public class Movimiento {
         this.cantidad = cantidad;
     }
 
-    public LocalDateTime getFecha() { return fecha; }
+    public String getFecha() { return fecha; }
 
     @Override
     public String toString() {

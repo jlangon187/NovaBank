@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,18 +11,19 @@ public class CuentaBancaria {
 
     private String iban;
     private Double balance;
-    private LocalDateTime fecha;
+    private String fecha;
     private Map<Long, Movimiento> movimientos;
 
     private long numeroCuenta;
-    private long contadorCuenta = 0L;
+    private static long contadorCuenta = 0L;
 
     public CuentaBancaria(Cliente cliente) {
         this.numeroCuenta = ++contadorCuenta;
         this.cliente = cliente;
         this.iban = generarIban();
         this.balance = 0.0;
-        this.fecha = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        this.fecha = LocalDateTime.now().format(formatter);
         this.movimientos = new HashMap<>();
     }
 
@@ -33,12 +35,16 @@ public class CuentaBancaria {
         return balance;
     }
 
-    public LocalDateTime getFecha() {
+    public String getFecha() {
         return fecha;
     }
 
     public Map<Long, Movimiento> getMovimiento() {
         return movimientos;
+    }
+
+    public void agregarMovimiento(Movimiento movimiento) {
+        movimientos.putIfAbsent(movimiento.getId(), movimiento);
     }
 
     public String generarIban() {
@@ -51,7 +57,7 @@ public class CuentaBancaria {
         return sb.toString();
     }
 
-    public void ingresar(String iban,  String tipo, Double cantidad) {
+    public void ingresar(String iban,  Double cantidad) {
         if (!iban.equals(this.iban)) {
             System.out.println("El número de cuenta no existe");
             return;
@@ -61,11 +67,10 @@ public class CuentaBancaria {
             return;
         }
         this.balance += cantidad;
-        Movimiento movimiento = new Movimiento(iban, tipo, cantidad);
-        movimientos.putIfAbsent(movimiento.getId(), movimiento);
+        System.out.println("Depósito realizado correctamente");
     }
 
-    public boolean retirar(String iban, String tipo, Double cantidad) {
+    public boolean retirar(String iban, Double cantidad) {
         if (!iban.equals(this.iban)) {
             System.out.println("El número de cuenta no existe");
             return false;
@@ -79,11 +84,13 @@ public class CuentaBancaria {
             return false;
         }
         this.balance -= cantidad;
-        Movimiento movimiento = new Movimiento(iban, tipo, cantidad);
-        movimientos.putIfAbsent(movimiento.getId(), movimiento);
+        System.out.println("Retiro realizado correctamente");
         return true;
     }
 
+    public String consultarSaldo(){
+        return "Saldo: " + this.balance + " €";
+    }
 
     @Override
     public String toString() {
