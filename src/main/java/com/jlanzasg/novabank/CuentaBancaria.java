@@ -1,8 +1,11 @@
 package com.jlanzasg.novabank;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CuentaBancaria {
@@ -11,7 +14,7 @@ public class CuentaBancaria {
 
     private String iban;
     private Double balance;
-    private String fecha;
+    private LocalDateTime fecha;
     private Map<Long, Movimiento> movimientos;
 
     private long numeroCuenta;
@@ -22,8 +25,7 @@ public class CuentaBancaria {
         this.cliente = cliente;
         this.iban = generarIban();
         this.balance = 0.0;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        this.fecha = LocalDateTime.now().format(formatter);
+        this.fecha = LocalDateTime.now();
         this.movimientos = new HashMap<>();
     }
 
@@ -35,7 +37,7 @@ public class CuentaBancaria {
         return balance;
     }
 
-    public String getFecha() {
+    public LocalDateTime getFecha() {
         return fecha;
     }
 
@@ -57,7 +59,7 @@ public class CuentaBancaria {
         return sb.toString();
     }
 
-    public void ingresar(String iban,  Double cantidad) {
+    public void ingresar(String iban, Double cantidad) {
         if (!iban.equals(this.iban)) {
             System.out.println("El número de cuenta no existe");
             return;
@@ -88,17 +90,41 @@ public class CuentaBancaria {
         return true;
     }
 
-    public String consultarSaldo(){
+    public String consultarSaldo() {
         return "Saldo: " + this.balance + " €";
+    }
+
+    public List<Movimiento> consultarMovimientosPorFecha(LocalDate inicio, LocalDate fin) {
+        List<Movimiento> movimientosPorFecha = new ArrayList<>();
+
+        if (fin.isBefore(inicio)) {
+            System.out.println("La fecha de fin no puede ser anterior a la de inicio");
+            return null;
+        }
+        if (inicio.isAfter(fin)) {
+            System.out.println("La fecha de inicio no puede ser posterior a la de fin");
+            return null;
+        }
+//        for (Map.Entry<Long, Movimiento> entry : movimientos.entrySet()) {
+//            if (inicio.isAfter(entry.getValue().getFecha().toLocalDate())) {
+//                movimientosPorFecha.add(entry.getValue());
+//                System.out.println(entry.getValue().getFecha());
+//            }
+//        }
+        return movimientosPorFecha;
     }
 
     @Override
     public String toString() {
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        String formato = dtf.format(fecha);
+
         return "CuentaBancaria{" +
                 "cliente=" + cliente +
                 ", iban='" + iban + '\'' +
                 ", balance=" + balance +
-                ", fecha=" + fecha +
+                ", fecha=" + formato +
                 '}';
     }
 }
