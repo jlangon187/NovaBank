@@ -1,15 +1,15 @@
 package com.jlanzasg.novabank;
 
 public class Cliente {
-    private Long id;
+    private long id;
     private String nombre;
     private String apellido;
     private String dni;
     private String email;
-    private String telefono;
-    private static Long contadorIdCliente = 1000L;
+    private int telefono;
+    private static long contadorIdCliente = 1000L;
 
-    public Cliente(String nombre, String apellido, String dni, String email, String telefono) {
+    public Cliente(String nombre, String apellido, String dni, String email, int telefono) {
         this.id = ++contadorIdCliente;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -54,11 +54,22 @@ public class Cliente {
         this.email = email;
     }
 
-    public String getTelefono() {
+    public int getTelefono() {
         return telefono;
     }
 
-    public void setTelefono(String telefono) {
+    public void setTelefono(int telefono) {
         this.telefono = telefono;
+    }
+
+    @Override
+    public String toString() {
+        return "Cliente{" +
+                "nombre='" + nombre + '\'' +
+                ", apellido='" + apellido + '\'' +
+                ", dni='" + dni + '\'' +
+                ", email='" + email + '\'' +
+                ", telefono=" + telefono +
+                '}';
     }
 }
