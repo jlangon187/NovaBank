@@ -8,7 +8,7 @@ public class Menu {
 
     public static void menuPrincipal() {
         Scanner sc = new Scanner(System.in);
-        int op = 0;
+        int op;
 
         do {
             System.out.println("=======================================");
