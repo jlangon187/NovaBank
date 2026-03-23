@@ -1,5 +1,8 @@
 package com.jlanzasg.novabank;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 public class Aplicacion {
     public static void main(String[] args) {
 
@@ -44,5 +47,12 @@ public class Aplicacion {
 
         System.out.println(cuentaBancaria.consultarSaldo());
         System.out.println(cuentaBancaria2.consultarSaldo());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String fechaInicio = "23/03/2026";
+        String fechaFin = "23/03/2026";
+        LocalDate inicio = LocalDate.parse(fechaInicio, formatter);
+        LocalDate fin = LocalDate.parse(fechaFin, formatter);
+        System.out.println(cuentaBancaria.consultarMovimientosPorFecha(inicio, fin));
     }
 }
