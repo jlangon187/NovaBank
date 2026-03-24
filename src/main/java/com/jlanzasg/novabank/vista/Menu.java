@@ -68,7 +68,7 @@ public class Menu {
                     buscarPorTipo(banco);
                     break;
                 case 3:
-                    operacionesFinancieras();
+                    MenuCliente.listarClientes(banco);
                     break;
                 case 4:
                     break;
