@@ -9,11 +9,11 @@ public class Cliente {
     private String apellido;
     private String dni;
     private String email;
-    private int telefono;
+    private String telefono;
     private static long contadorIdCliente = 1000L; // contador para el ID de cliente
 
     // Constructor
-    public Cliente(String nombre, String apellido, String dni, String email, int telefono) {
+    public Cliente(String nombre, String apellido, String dni, String email, String telefono) {
         this.id = ++contadorIdCliente; // Se incrementa el ID con el contador
         this.nombre = nombre;
         this.apellido = apellido;
@@ -58,11 +58,11 @@ public class Cliente {
         this.email = email;
     }
 
-    public int getTelefono() {
+    public String getTelefono() {
         return telefono;
     }
 
-    public void setTelefono(int telefono) {
+    public void setTelefono(String telefono) {
         this.telefono = telefono;
     }
 
