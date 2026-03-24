@@ -41,61 +41,6 @@ public class Banco {
         cuentas.putIfAbsent(cuenta.getIban(), cuenta);
     }
 
-    // Método con la verificación que hay que realizar antes de hacer la transferencia
-    // 1 - Que las cuentas existan
-    // 2 - Que la cuenta de origen y destino no sean las mismas
-    // 3 - Que la cantidad a transferir sea mayor a 0 €
-    // 4 - Que la cuenta de origen tenga el saldo suficiente para transferir
-    public boolean esOperacionValida(String ibanOrigen, String ibanDestino, Double cantidad) {
-        if (!cuentas.containsKey(ibanOrigen)) {
-            System.out.println("El IBAN de origen no existe");
-            return false;
-        }
-        if (!cuentas.containsKey(ibanDestino)) {
-            System.out.println("El IBAN de destino no existe");
-            return false;
-        }
-        if (ibanOrigen.equals(ibanDestino)) {
-            System.out.println("El IBAN de origen y el de destino no pueden ser los mismos");
-            return false;
-        }
-        if (cantidad <= 0) {
-            System.out.println("El cantidad debe ser mayor a 0 €");
-            return false;
-        }
-        CuentaBancaria cuentaOrigen = cuentas.get(ibanOrigen);
-        if (cuentaOrigen.getBalance() < cantidad) {
-            System.out.println("Saldo insuficiente");
-            return false;
-        }
-
-        return true;
-    }
-
-    // Método que realiza la transferencia después de pasar la validación previa
-    // Se mete en un try-catch por si tira alguna excepción, luego se obtienen los IBAN
-    // y se procede a retirar primero el dinero de la cuenta de origen y si procede, se ingresa el en la cuenta de destino
-    // Finalmente se crean los movimientos y se registran en el HashMap de las Cuenta Bancarias donde se han transferido el dinero
-    public void realizarTransferencia(String ibanOrigen, String ibanDestino, Double cantidad) {
-        try {
-            if (esOperacionValida(ibanOrigen, ibanDestino, cantidad)) {
-                CuentaBancaria cuentaOrigen = cuentas.get(ibanOrigen);
-                CuentaBancaria cuentaDestino = cuentas.get(ibanDestino);
-                if (cuentaOrigen.retirar(cantidad)) {
-                    cuentaDestino.ingresar(cantidad);
-
-                    Movimiento transferenciaOrigen = new Movimiento(cuentaOrigen, TipoMovimiento.TRANSFERENCIA_SALIENTE.name(), cantidad);
-                    cuentaOrigen.registrarMovimiento(transferenciaOrigen);
-                    Movimiento transferenciaDestino = new Movimiento(cuentaDestino, TipoMovimiento.TRANSFERENCIA_ENTRANTE.name(), cantidad);
-                    cuentaDestino.registrarMovimiento(transferenciaDestino);
-                    System.out.println("Transferencia realizada con éxito");
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("Error al realizar transferencia");
-        }
-    }
-
     public Collection<Cliente> buscarClientePorDni(String dni) {
         return clientes.values().stream().filter(cliente -> cliente.getDni().equals(dni)).toList();
     }
