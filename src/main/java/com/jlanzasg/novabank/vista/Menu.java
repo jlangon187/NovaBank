@@ -5,6 +5,8 @@ import com.jlanzasg.novabank.modelo.CuentaBancaria;
 import com.jlanzasg.novabank.negocio.Banco;
 import com.jlanzasg.novabank.validaciones.Validacion;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import java.util.function.Predicate;
 
@@ -12,6 +14,7 @@ public class Menu {
     MenuCliente menuCliente = new MenuCliente();
     MenuCuentas menuCuentas = new MenuCuentas();
     MenuOperaciones menuOperaciones = new MenuOperaciones();
+    MenuConsultas menuConsultas = new MenuConsultas();
 
     public void menuPrincipal(Banco banco) {
         Scanner sc = new Scanner(System.in);
@@ -40,7 +43,7 @@ public class Menu {
                     operacionesFinancieras(banco);
                     break;
                 case 4:
-                    consultas();
+                    consultas(banco);
                     break;
                 case 5:
                     System.out.println("Saliendo de la aplicación");
@@ -187,11 +190,43 @@ public class Menu {
         } while (op != 4);
     }
 
-    public void consultas() {
-        System.out.println("--- CONSULTAS ---");
-        System.out.println("1. Consultar saldo");
-        System.out.println("2. Historial de movimientos");
-        System.out.println("3. Movimientos por rango de fechas");
-        System.out.println("4. Volver");
+    public void consultas(Banco banco) {
+        Scanner sc = new Scanner(System.in);
+        int op;
+
+        do {
+            System.out.println("--- CONSULTAS ---");
+            System.out.println("1. Consultar saldo");
+            System.out.println("2. Historial de movimientos");
+            System.out.println("3. Movimientos por rango de fechas");
+            System.out.println("4. Volver");
+
+            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+
+            switch (op) {
+                case 1:
+                    String ibanSaldo = Validacion.leerIban(sc);
+                    menuConsultas.consultarSaldo(banco, ibanSaldo);
+                    break;
+                case 2:
+                    String ibanMov = Validacion.leerIban(sc);
+                    menuConsultas.consultarMovimientos(banco, ibanMov);
+                    break;
+                case 3:
+                    String ibanFecha = Validacion.leerIban(sc);
+                    String fechaInicioStr = Validacion.leerFecha(sc, "Introduce la fecha de inicio (dd/MM/yyyy): ");
+                    String fechaFinStr = Validacion.leerFecha(sc, "Introduce la fecha de fin (dd/MM/yyyy): ");
+                    DateTimeFormatter formatoEntrada = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    LocalDate fechaInicio = LocalDate.parse(fechaInicioStr, formatoEntrada);
+                    LocalDate fechaFin = LocalDate.parse(fechaFinStr, formatoEntrada);
+                    menuConsultas.consultarMovimientosPorFecha(banco, ibanFecha, fechaInicio, fechaFin);
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("No ha introducido una opción correcta");
+                    break;
+            }
+        } while (op != 4);
     }
 }
