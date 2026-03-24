@@ -9,7 +9,7 @@ import java.util.Scanner;
 
 public class MenuCliente {
 
-    public static void altaCliente(Banco banco) {
+    public void altaCliente(Banco banco) {
         Scanner sc = new Scanner(System.in);
         System.out.println("Introduzca los datos del cliente:");
         String nombre = Validacion.leerNombre(sc,"Nombre: ");
@@ -23,7 +23,7 @@ public class MenuCliente {
         System.out.println("ID cliente: " + cliente.getId());
     }
 
-    public static void buscarPorDni(Banco banco) {
+    public void buscarPorDni(Banco banco) {
         Scanner sc = new Scanner(System.in);
 
         System.out.print("Introduzca el DNI del cliente que desea buscar:");
@@ -41,7 +41,7 @@ public class MenuCliente {
         }
     }
 
-    public static void buscarPorId(Banco banco) {
+    public void buscarPorId(Banco banco) {
         Scanner sc = new Scanner(System.in);
 
         String valor = Validacion.leerEntero(sc, "Introduzca el ID del cliente que desea buscar: ");
@@ -59,7 +59,7 @@ public class MenuCliente {
         }
     }
 
-    public static void listarClientes(Banco banco) {
+    public void listarClientes(Banco banco) {
 
         if (banco.getClientes().isEmpty()) {
             System.out.println("No hay clientes registrados");

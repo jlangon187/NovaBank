@@ -1,11 +1,8 @@
 package com.jlanzasg.novabank.modelo;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 // Clase CuentaBancaria que maneja operaciones en la cuenta bancaria como los movimientos de la cuenta
@@ -78,7 +75,6 @@ public class CuentaBancaria {
     public void ingresar(Double cantidad) {
         if (cantidadNoZero(cantidad)) {
             this.balance += cantidad;
-            System.out.println("Depósito realizado correctamente");
         }
     }
 
@@ -88,42 +84,13 @@ public class CuentaBancaria {
             return false;
         }
         if (this.balance < cantidad) {
-            System.out.println("No hay saldo suficiente para retirar");
+            System.out.println("ERROR: Saldo insuficiente.");
+            System.out.println("Saldo disponible: " + this.balance + " €");
+            System.out.println("Importe solicitado: " + cantidad + " €");
             return false;
         }
         this.balance -= cantidad;
-        System.out.println("Retiro realizado correctamente");
         return true;
-    }
-
-    // Método que consulta el saldo actual
-    public String consultarSaldo() {
-        return "Saldo: " + this.balance + " €";
-    }
-
-    // Método para consultar los movimientos de la cuenta por fecha de inicio y fin
-    // Creamos una Lista para meter los movimientos en ese rango
-    // Se comprueba si la fecha de fin no es anterior a la de inicio y en el bucle foreach se va iterando
-    // la fecha y si esta en el rango de inicio y fin que añade ese movimiento a la lista y luego se imprime con el otro foreach
-    public void consultarMovimientosPorFecha(LocalDate inicio, LocalDate fin) {
-        List<Movimiento> movimientosPorFecha = new ArrayList<>();
-
-        if (fin.isBefore(inicio)) {
-            System.out.println("La fecha de fin no puede ser anterior a la de inicio");
-            return;
-        }
-
-        for (Map.Entry<Long, Movimiento> entry : movimientos.entrySet()) {
-            LocalDate fecha = entry.getValue().getFecha().toLocalDate();
-
-            if (fecha.isAfter(inicio.minusDays(1)) && fecha.isBefore(fin.plusDays(1))) {
-                movimientosPorFecha.add(entry.getValue());
-            }
-        }
-
-        for (Movimiento movimiento : movimientosPorFecha) {
-            System.out.println(movimiento.toString());
-        }
     }
 
     @Override

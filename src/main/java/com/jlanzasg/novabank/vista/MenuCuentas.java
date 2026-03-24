@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 public class MenuCuentas {
 
     // Método para crear una cuenta para un cliente
-    public static void crearCuenta(Banco banco, String id) {
+    public void crearCuenta(Banco banco, String id) {
         try {
             if (banco.buscarClientePorId(Integer.parseInt(id)).isEmpty()) {
                 throw new RuntimeException("El cliente no existe");
@@ -23,7 +23,7 @@ public class MenuCuentas {
     }
 
     // Método para listar las cuentas de un cliente
-    public static void listarCuentas(Banco banco, String id) {
+    public void listarCuentas(Banco banco, String id) {
 
         int idCliente = Integer.parseInt(id);
         var clientes = banco.buscarClientePorId(idCliente);
@@ -52,7 +52,7 @@ public class MenuCuentas {
                 );
     }
 
-    public static void verCuenta(Banco banco, String iban) {
+    public void verCuenta(Banco banco, String iban) {
 
         if (!banco.getCuentas().containsKey(iban)) {
             System.out.println("La cuenta no existe.");
