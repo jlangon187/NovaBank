@@ -76,7 +76,6 @@ public class CuentaBancaria {
     public void ingresar(Double cantidad) {
         if (cantidadNoZero(cantidad)) {
             this.balance += cantidad;
-            System.out.println("Depósito realizado correctamente");
         }
     }
 
@@ -86,11 +85,12 @@ public class CuentaBancaria {
             return false;
         }
         if (this.balance < cantidad) {
-            System.out.println("No hay saldo suficiente para retirar");
+            System.out.println("ERROR: Saldo insuficiente.");
+            System.out.println("Saldo disponible: " + this.balance + " €");
+            System.out.println("Importe solicitado: " + cantidad + " €");
             return false;
         }
         this.balance -= cantidad;
-        System.out.println("Retiro realizado correctamente");
         return true;
     }
 

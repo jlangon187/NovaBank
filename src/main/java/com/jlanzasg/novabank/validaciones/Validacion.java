@@ -33,6 +33,15 @@ public class Validacion {
         }
     }
 
+    private static boolean esDouble(String entrada) {
+        try {
+            Double.parseDouble(entrada);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     public static boolean esTextoObligatorioSinNumeros(String entrada) {
         return entrada != null
                 && !entrada.isBlank()
@@ -63,6 +72,14 @@ public class Validacion {
         return limpio.matches("\\d{9}");
     }
 
+    public static boolean esIbanValido(String iban) {
+
+        if (iban == null) return false;
+
+        iban = iban.replaceAll("\\s+", "").toUpperCase();
+
+        return iban.matches("^ES\\d{20}$");
+    }
 
     public static String leerEntero(Scanner sc, String mensaje) {
         return leerDato(
@@ -70,6 +87,15 @@ public class Validacion {
                 mensaje,
                 Validacion::esEntero,
                 "Debe ingresar un número entero válido."
+        );
+    }
+
+    public static String leerDouble(Scanner sc, String mensaje) {
+        return leerDato(
+                sc,
+                mensaje,
+                Validacion::esDouble,
+                "Debe ingresar un número decimal."
         );
     }
 
@@ -94,5 +120,9 @@ public class Validacion {
         String telefono = leerDato(sc, "Teléfono: ", Validacion::esTelefonoValido,
                 "Formato de teléfono incorrecto, debe tener 9 dígitos");
         return telefono.replaceAll("\\s+", "");
+    }
+
+    public static String leerIban(Scanner sc) {
+        return leerDato(sc, "IBAN: ", Validacion::esIbanValido, "Formato de IBAN incorrecto.");
     }
 }

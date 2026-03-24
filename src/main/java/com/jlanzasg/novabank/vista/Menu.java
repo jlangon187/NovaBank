@@ -1,5 +1,7 @@
 package com.jlanzasg.novabank.vista;
 
+import com.jlanzasg.novabank.modelo.Cliente;
+import com.jlanzasg.novabank.modelo.CuentaBancaria;
 import com.jlanzasg.novabank.negocio.Banco;
 import com.jlanzasg.novabank.validaciones.Validacion;
 
@@ -7,8 +9,11 @@ import java.util.Scanner;
 import java.util.function.Predicate;
 
 public class Menu {
+    MenuCliente menuCliente = new MenuCliente();
+    MenuCuentas menuCuentas = new MenuCuentas();
+    MenuOperaciones menuOperaciones = new MenuOperaciones();
 
-    public static void menuPrincipal(Banco banco) {
+    public void menuPrincipal(Banco banco) {
         Scanner sc = new Scanner(System.in);
         int op;
 
@@ -29,10 +34,10 @@ public class Menu {
                     gestionarClientes(banco);
                     break;
                 case 2:
-                    gestionarCuentas();
+                    gestionarCuentas(banco);
                     break;
                 case 3:
-                    operacionesFinancieras();
+                    operacionesFinancieras(banco);
                     break;
                 case 4:
                     consultas();
@@ -47,7 +52,7 @@ public class Menu {
         } while (op != 5);
     }
 
-    public static void gestionarClientes(Banco banco) {
+    public void gestionarClientes(Banco banco) {
         Scanner sc = new Scanner(System.in);
         int op;
 
@@ -62,13 +67,13 @@ public class Menu {
 
             switch (op) {
                 case 1:
-                    MenuCliente.altaCliente(banco);
+                    menuCliente.altaCliente(banco);
                     break;
                 case 2:
                     buscarPorTipo(banco);
                     break;
                 case 3:
-                    MenuCliente.listarClientes(banco);
+                    menuCliente.listarClientes(banco);
                     break;
                 case 4:
                     break;
@@ -79,7 +84,7 @@ public class Menu {
         } while (op != 4);
     }
 
-    public static void buscarPorTipo(Banco banco) {
+    public void buscarPorTipo(Banco banco) {
         Scanner sc = new Scanner(System.in);
         int op;
 
@@ -93,10 +98,10 @@ public class Menu {
 
             switch (op) {
                 case 1:
-                    MenuCliente.buscarPorDni(banco);
+                    menuCliente.buscarPorDni(banco);
                     break;
                 case 2:
-                    MenuCliente.buscarPorId(banco);
+                    menuCliente.buscarPorId(banco);
                     break;
                 case 3:
                     break;
@@ -108,23 +113,81 @@ public class Menu {
 
     }
 
-    public static void gestionarCuentas() {
-        System.out.println("--- GESTIÓN DE CUENTAS ---");
-        System.out.println("1. Crear cuenta");
-        System.out.println("2. Listar cuentas de cliente");
-        System.out.println("3. Ver información de cuenta");
-        System.out.println("4. Volver");
+    public void gestionarCuentas(Banco banco) {
+        Scanner sc = new Scanner(System.in);
+        int op;
+
+        do {
+            System.out.println("--- GESTIÓN DE CUENTAS ---");
+            System.out.println("1. Crear cuenta");
+            System.out.println("2. Listar cuentas de cliente");
+            System.out.println("3. Ver información de cuenta");
+            System.out.println("4. Volver");
+
+            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+
+            switch (op) {
+                case 1:
+                    String id = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
+                    menuCuentas.crearCuenta(banco, id);
+                    break;
+                case 2:
+                    String idCliente = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
+                    menuCuentas.listarCuentas(banco, idCliente);
+                    break;
+                case 3:
+                    String iban = Validacion.leerIban(sc);
+                    menuCuentas.verCuenta(banco, iban);
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("No ha introducido una opción correcta");
+                    break;
+            }
+        } while (op != 4);
     }
 
-    public static void operacionesFinancieras() {
-        System.out.println("--- OPERACIONES FINANCIERAS ---");
-        System.out.println("1. Depositar dinero");
-        System.out.println("2. Retirar dinero");
-        System.out.println("3. Transferencia entre cuentas");
-        System.out.println("4. Volver");
+    public void operacionesFinancieras(Banco banco) {
+        Scanner sc = new Scanner(System.in);
+        int op;
+
+        do {
+            System.out.println("--- OPERACIONES FINANCIERAS ---");
+            System.out.println("1. Depositar dinero");
+            System.out.println("2. Retirar dinero");
+            System.out.println("3. Transferencia entre cuentas");
+            System.out.println("4. Volver");
+
+            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+
+            switch (op) {
+                case 1:
+                    String ibanIng = Validacion.leerIban(sc);
+                    String cantidadIng = Validacion.leerDouble(sc, "Introduzca la cantidad a ingresar: ");
+                    menuOperaciones.ingresar(banco, ibanIng, cantidadIng);
+                    break;
+                case 2:
+                    String ibanRet = Validacion.leerIban(sc);
+                    String cantidadRet = Validacion.leerDouble(sc, "Introduzca la cantidad a ingresar: ");
+                    menuOperaciones.ingresar(banco, ibanRet, cantidadRet);
+                    break;
+                case 3:
+                    String ibanOrigen = Validacion.leerIban(sc);
+                    String ibanDestino = Validacion.leerIban(sc);
+                    String cantidadTransferencia = Validacion.leerDouble(sc, "Introduzca la cantidad a transferir: ");
+                    menuOperaciones.realizarTransferencia(banco, ibanOrigen, ibanDestino, cantidadTransferencia);
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("No ha introducido una opción correcta");
+                    break;
+            }
+        } while (op != 4);
     }
 
-    public static void consultas() {
+    public void consultas() {
         System.out.println("--- CONSULTAS ---");
         System.out.println("1. Consultar saldo");
         System.out.println("2. Historial de movimientos");
