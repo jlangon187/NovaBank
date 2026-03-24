@@ -10,7 +10,7 @@ public class Aplicacion {
         Banco banco = new Banco();
 
         // Menu principal
-        Menu.menuPrincipal();
+        Menu.menuPrincipal(banco);
 
 //        Cliente cliente = new Cliente("Javier", "Torres", "12345678Z", "javi@mail.com", 666123456);
 //        CuentaBancaria cuentaBancaria = new CuentaBancaria(cliente);

@@ -5,6 +5,7 @@ import com.jlanzasg.novabank.modelo.CuentaBancaria;
 import com.jlanzasg.novabank.modelo.Movimiento;
 import com.jlanzasg.novabank.modelo.TipoMovimiento;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,5 +94,13 @@ public class Banco {
         } catch (Exception e) {
             System.out.println("Error al realizar transferencia");
         }
+    }
+
+    public Collection<Cliente> buscarClientePorDni(String dni) {
+        return clientes.values().stream().filter(cliente -> cliente.getDni().equals(dni)).toList();
+    }
+
+    public Collection<Cliente> buscarClientePorId(int id) {
+        return clientes.values().stream().filter(cliente -> cliente.getId() == id).toList();
     }
 }
