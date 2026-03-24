@@ -63,6 +63,14 @@ public class Validacion {
         return limpio.matches("\\d{9}");
     }
 
+    public static boolean esIbanValido(String iban) {
+
+        if (iban == null) return false;
+
+        iban = iban.replaceAll("\\s+", "").toUpperCase();
+
+        return iban.matches("^ES\\d{20}$");
+    }
 
     public static String leerEntero(Scanner sc, String mensaje) {
         return leerDato(
@@ -94,5 +102,9 @@ public class Validacion {
         String telefono = leerDato(sc, "Teléfono: ", Validacion::esTelefonoValido,
                 "Formato de teléfono incorrecto, debe tener 9 dígitos");
         return telefono.replaceAll("\\s+", "");
+    }
+
+    public static String leerIban(Scanner sc) {
+        return leerDato(sc, "IBAN: ", Validacion::esIbanValido, "Formato de IBAN incorrecto.");
     }
 }

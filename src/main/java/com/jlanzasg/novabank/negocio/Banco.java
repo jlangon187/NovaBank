@@ -91,8 +91,8 @@ public class Banco {
                     System.out.println("Transferencia realizada con éxito");
                 }
             }
-        } catch (Exception e) {
-            System.out.println("Error al realizar transferencia");
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error al realizar la transferencia");
         }
     }
 
