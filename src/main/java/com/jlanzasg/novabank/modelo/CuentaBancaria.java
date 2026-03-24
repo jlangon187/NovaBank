@@ -43,6 +43,8 @@ public class CuentaBancaria {
         return movimientos;
     }
 
+    public Cliente getCliente() { return cliente; }
+
     // Registro de movimientos en el HashMap
     public void registrarMovimiento(Movimiento movimiento) {
         movimientos.putIfAbsent(movimiento.getId(), movimiento);
