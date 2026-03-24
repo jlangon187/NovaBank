@@ -2,6 +2,9 @@ package com.jlanzasg.novabank.validaciones;
 
 import com.jlanzasg.novabank.negocio.Banco;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Scanner;
 import java.util.function.Predicate;
 
@@ -81,6 +84,16 @@ public class Validacion {
         return iban.matches("^ES\\d{20}$");
     }
 
+    public static boolean esFechaValida(String fecha) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            LocalDate.parse(fecha, formatter);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
     public static String leerEntero(Scanner sc, String mensaje) {
         return leerDato(
                 sc,
@@ -124,5 +137,14 @@ public class Validacion {
 
     public static String leerIban(Scanner sc) {
         return leerDato(sc, "IBAN: ", Validacion::esIbanValido, "Formato de IBAN incorrecto.");
+    }
+
+    public static String leerFecha(Scanner sc, String mensaje) {
+        return leerDato(
+                sc,
+                mensaje,
+                Validacion::esFechaValida,
+                "Formato de fecha incorrecto o fecha inexistente. Debe ser dd/MM/yyyy."
+        );
     }
 }
