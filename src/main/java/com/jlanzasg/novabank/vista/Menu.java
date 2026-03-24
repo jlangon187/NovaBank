@@ -1,5 +1,7 @@
 package com.jlanzasg.novabank.vista;
 
+import com.jlanzasg.novabank.modelo.Cliente;
+import com.jlanzasg.novabank.modelo.CuentaBancaria;
 import com.jlanzasg.novabank.negocio.Banco;
 import com.jlanzasg.novabank.validaciones.Validacion;
 
@@ -29,7 +31,7 @@ public class Menu {
                     gestionarClientes(banco);
                     break;
                 case 2:
-                    gestionarCuentas();
+                    gestionarCuentas(banco);
                     break;
                 case 3:
                     operacionesFinancieras();
@@ -108,12 +110,39 @@ public class Menu {
 
     }
 
-    public static void gestionarCuentas() {
-        System.out.println("--- GESTIÓN DE CUENTAS ---");
-        System.out.println("1. Crear cuenta");
-        System.out.println("2. Listar cuentas de cliente");
-        System.out.println("3. Ver información de cuenta");
-        System.out.println("4. Volver");
+    public static void gestionarCuentas(Banco banco) {
+        Scanner sc = new Scanner(System.in);
+        int op;
+
+        do {
+            System.out.println("--- GESTIÓN DE CUENTAS ---");
+            System.out.println("1. Crear cuenta");
+            System.out.println("2. Listar cuentas de cliente");
+            System.out.println("3. Ver información de cuenta");
+            System.out.println("4. Volver");
+
+            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+
+            switch (op) {
+                case 1:
+                    String id = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
+                    MenuCuentas.crearCuenta(banco, id);
+                    break;
+                case 2:
+                    String idCliente = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
+                    MenuCuentas.listarCuentas(banco, idCliente);
+                    break;
+                case 3:
+                    String iban = Validacion.leerIban(sc);
+                    MenuCuentas.verCuenta(banco, iban);
+                    break;
+                case 4:
+                    break;
+                default:
+                    System.out.println("No ha introducido una opción correcta");
+                    break;
+            }
+        } while (op != 4);
     }
 
     public static void operacionesFinancieras() {
