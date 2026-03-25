@@ -1,4 +1,4 @@
-CREATE DATABASE sistema_bancario;
+CREATE DATABASE novabank_db;
 
 CREATE TABLE clientes (
     id SERIAL PRIMARY KEY,
