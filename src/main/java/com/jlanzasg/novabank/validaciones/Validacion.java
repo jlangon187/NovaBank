@@ -121,8 +121,8 @@ public class Validacion {
         return leerDato(sc, "Email: ", Validacion::esEmailValido, "El formato de email no es correcto.");
     }
 
-    public static String leerDni(Scanner sc, Banco banco) {
-        return leerDato(sc, "DNI: ", dni -> {
+    public static String leerDni(Scanner sc, Banco banco, String mensaje) {
+        return leerDato(sc, mensaje, dni -> {
                     String dniMayus = dni.toUpperCase();
                     return esDniValido(dniMayus) && banco.buscarClientePorDni(dniMayus).isEmpty();
                 },
