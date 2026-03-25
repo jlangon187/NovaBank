@@ -14,7 +14,7 @@ public class MenuCliente {
         System.out.println("Introduzca los datos del cliente:");
         String nombre = Validacion.leerNombre(sc,"Nombre: ");
         String apellido = Validacion.leerNombre(sc,"Apellido: ");
-        String dni = Validacion.leerDni(sc, banco);
+        String dni = Validacion.leerDni(sc, banco, "DNI: ");
         String email = Validacion.leerEmail(sc);
         String telefono = Validacion.leerTelefono(sc);
         Cliente cliente = new Cliente(nombre, apellido, dni, email, telefono);
@@ -26,8 +26,8 @@ public class MenuCliente {
     public void buscarPorDni(Banco banco) {
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Introduzca el DNI del cliente que desea buscar:");
-        String dniBuscar = sc.nextLine();
+        System.out.print("Introduzca el DNI del cliente que desea buscar: ");
+        String dniBuscar = sc.nextLine().toUpperCase();
         Collection<Cliente> clientes = banco.buscarClientePorDni(dniBuscar);
         if (clientes.isEmpty()) {
             System.out.println("\nERROR: No se encontró ningún cliente con DNI " + dniBuscar);
