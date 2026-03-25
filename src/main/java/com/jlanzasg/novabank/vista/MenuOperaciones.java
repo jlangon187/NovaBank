@@ -39,13 +39,14 @@ public class MenuOperaciones {
             return;
         }
         try {
-            cuenta.retirar(cantidadDouble);
-            Movimiento movimiento = new Movimiento(cuenta, TipoMovimiento.RETIRO.name(), cantidadDouble);
-            cuenta.registrarMovimiento(movimiento);
-            System.out.println("Retiro realizado correctamente.");
-            System.out.println("Cuenta: " + cuenta.getIban());
-            System.out.println("Importe: +" + cantidadDouble + " €");
-            System.out.println("Nuevo saldo: " + cuenta.getBalance() + " €");
+            if (cuenta.retirar(cantidadDouble)) {
+                Movimiento movimiento = new Movimiento(cuenta, TipoMovimiento.RETIRO.name(), cantidadDouble);
+                cuenta.registrarMovimiento(movimiento);
+                System.out.println("Retiro realizado correctamente.");
+                System.out.println("Cuenta: " + cuenta.getIban());
+                System.out.println("Importe: -" + cantidadDouble + " €");
+                System.out.println("Nuevo saldo: " + cuenta.getBalance() + " €");
+            }
         } catch (RuntimeException e) {
             throw new RuntimeException("Error al retirar el dinero.");
         }
