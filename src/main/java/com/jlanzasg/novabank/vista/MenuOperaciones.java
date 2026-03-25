@@ -56,7 +56,7 @@ public class MenuOperaciones {
     // 2 - Que la cuenta de origen y destino no sean las mismas
     // 3 - Que la cantidad a transferir sea mayor a 0 €
     // 4 - Que la cuenta de origen tenga el saldo suficiente para transferir
-    public boolean esOperacionValida(Banco banco,String ibanOrigen, String ibanDestino, String cantidad) {
+    public boolean esOperacionValida(Banco banco, String ibanOrigen, String ibanDestino, String cantidad) {
         double cantidadDouble = Double.parseDouble(cantidad);
         Map<String, CuentaBancaria> cuentas = banco.getCuentas();
 
@@ -90,26 +90,33 @@ public class MenuOperaciones {
     // y se procede a retirar primero el dinero de la cuenta de origen y si procede, se ingresa el en la cuenta de destino
     // Finalmente se crean los movimientos y se registran en el HashMap de las Cuenta Bancarias donde se han transferido el dinero
     public void realizarTransferencia(Banco banco, String ibanOrigen, String ibanDestino, String cantidad) {
-        Map<String, CuentaBancaria> cuentas = banco.getCuentas();
-        double cantidadDouble = Double.parseDouble(cantidad);
         try {
+            double cantidadDouble = Double.parseDouble(cantidad);
+
             if (esOperacionValida(banco, ibanOrigen, ibanDestino, cantidad)) {
+
+                Map<String, CuentaBancaria> cuentas = banco.getCuentas();
                 CuentaBancaria cuentaOrigen = cuentas.get(ibanOrigen);
                 CuentaBancaria cuentaDestino = cuentas.get(ibanDestino);
+
                 if (cuentaOrigen.retirar(cantidadDouble)) {
                     cuentaDestino.ingresar(cantidadDouble);
 
                     Movimiento transferenciaOrigen = new Movimiento(cuentaOrigen, TipoMovimiento.TRANSFERENCIA_SALIENTE.name(), cantidadDouble);
                     cuentaOrigen.registrarMovimiento(transferenciaOrigen);
+
                     Movimiento transferenciaDestino = new Movimiento(cuentaDestino, TipoMovimiento.TRANSFERENCIA_ENTRANTE.name(), cantidadDouble);
                     cuentaDestino.registrarMovimiento(transferenciaDestino);
+
                     System.out.println("Transferencia realizada correctamente.");
                     System.out.println("Cuenta origen: " + ibanOrigen + " -> -" + cantidadDouble + " €");
-                    System.out.println("Cuenta destino: " + ibanDestino + " -> -" + cantidadDouble + " €");
+                    System.out.println("Cuenta destino: " + ibanDestino + " -> +" + cantidadDouble + " €");
+                } else {
+                    System.out.println("Error: La operación fue cancelada porque falló el retiro en la cuenta origen.");
                 }
             }
         } catch (RuntimeException e) {
-            throw new RuntimeException("Error al realizar la transferencia");
+            throw new RuntimeException("Error inesperado al realizar la transferencia");
         }
     }
 }

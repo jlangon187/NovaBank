@@ -11,6 +11,6 @@ public class Aplicacion {
         Menu menu = new Menu();
 
         // Menu principal
-        Menu.menuPrincipal(banco);
+        menu.menuPrincipal(banco);
     }
 }
