@@ -80,7 +80,7 @@ public class CuentaBancaria {
 
     // Método para retirar el dinero que verifica tambien si en la cuenta hay saldo suficiente
     public boolean retirar(Double cantidad) {
-        if (cantidadNoZero(cantidad)) {
+        if (!cantidadNoZero(cantidad)) {
             return false;
         }
         if (this.balance < cantidad) {

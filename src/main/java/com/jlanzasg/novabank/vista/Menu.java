@@ -172,11 +172,13 @@ public class Menu {
                     break;
                 case 2:
                     String ibanRet = Validacion.leerIban(sc);
-                    String cantidadRet = Validacion.leerDouble(sc, "Introduzca la cantidad a ingresar: ");
-                    menuOperaciones.ingresar(banco, ibanRet, cantidadRet);
+                    String cantidadRet = Validacion.leerDouble(sc, "Introduzca la cantidad a retirar: ");
+                    menuOperaciones.retirar(banco, ibanRet, cantidadRet);
                     break;
                 case 3:
+                    System.out.println("Introduzca el IBAN de la cuenta de origen: ");
                     String ibanOrigen = Validacion.leerIban(sc);
+                    System.out.println("Introduzca el IBAN de la cuenta de destino: ");
                     String ibanDestino = Validacion.leerIban(sc);
                     String cantidadTransferencia = Validacion.leerDouble(sc, "Introduzca la cantidad a transferir: ");
                     menuOperaciones.realizarTransferencia(banco, ibanOrigen, ibanDestino, cantidadTransferencia);
