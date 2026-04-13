@@ -1,9 +1,9 @@
-package com.jlanzasg.novabank.vista;
+package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.modelo.CuentaBancaria;
-import com.jlanzasg.novabank.modelo.Movimiento;
-import com.jlanzasg.novabank.modelo.TipoMovimiento;
-import com.jlanzasg.novabank.negocio.Banco;
+import com.jlanzasg.novabank.model.CuentaBancaria;
+import com.jlanzasg.novabank.model.Movimiento;
+import com.jlanzasg.novabank.model.TipoMovimiento;
+import com.jlanzasg.novabank.service.Banco;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -36,7 +36,7 @@ public class MenuConsultas {
         if (existeCuenta(banco, iban)) {
 
             CuentaBancaria cuentaBancaria = banco.getCuentas().get(iban);
-            Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimiento();
+            Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimientos();
 
             if (movimientos == null || movimientos.isEmpty()) {
                 System.out.println("No hay movimientos registrados con este IBAN: " + iban);
@@ -68,7 +68,7 @@ public class MenuConsultas {
         if (existeCuenta(banco, iban)) {
 
             CuentaBancaria cuentaBancaria = banco.getCuentas().get(iban);
-            Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimiento();
+            Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimientos();
 
             if (movimientos == null || movimientos.isEmpty()) {
                 System.out.println("No hay movimientos registrados con este IBAN: " + iban);

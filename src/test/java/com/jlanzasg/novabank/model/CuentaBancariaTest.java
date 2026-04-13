@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.modelo;
+package com.jlanzasg.novabank.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

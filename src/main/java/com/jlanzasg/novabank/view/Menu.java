@@ -1,14 +1,11 @@
-package com.jlanzasg.novabank.vista;
+package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.modelo.Cliente;
-import com.jlanzasg.novabank.modelo.CuentaBancaria;
-import com.jlanzasg.novabank.negocio.Banco;
-import com.jlanzasg.novabank.validaciones.Validacion;
+import com.jlanzasg.novabank.service.Banco;
+import com.jlanzasg.novabank.utils.Validacion;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
-import java.util.function.Predicate;
 
 public class Menu {
     MenuCliente menuCliente = new MenuCliente();
