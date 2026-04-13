@@ -1,6 +1,5 @@
 package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.service.Banco;
 import com.jlanzasg.novabank.utils.Validacion;
 
 import java.time.LocalDate;
@@ -8,17 +7,38 @@ import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 public class Menu {
-    MenuCliente menuCliente = new MenuCliente();
-    MenuCuentas menuCuentas = new MenuCuentas();
-    MenuOperaciones menuOperaciones = new MenuOperaciones();
-    MenuConsultas menuConsultas = new MenuConsultas();
 
-    public void menuPrincipal(Banco banco) {
+    private final MenuCliente menuCliente;
+    private final MenuCuentas menuCuentas;
+    private final MenuOperaciones menuOperaciones;
+    private final MenuConsultas menuConsultas;
+
+    public Menu(MenuCliente menuCliente, MenuCuentas menuCuentas,
+                MenuOperaciones menuOperaciones, MenuConsultas menuConsultas) {
+        this.menuCliente = menuCliente;
+        this.menuCuentas = menuCuentas;
+        this.menuOperaciones = menuOperaciones;
+        this.menuConsultas = menuConsultas;
+    }
+
+    private int leerOpcion(Scanner sc, String mensaje) {
+        String entrada;
+        do {
+            System.out.print(mensaje);
+            entrada = sc.nextLine();
+            if (!Validacion.esEntero(entrada)) {
+                System.out.println("Error: Debe introducir un número válido.");
+            }
+        } while (!Validacion.esEntero(entrada));
+        return Integer.parseInt(entrada);
+    }
+
+    public void menuPrincipal() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("=======================================");
+            System.out.println("\n=======================================");
             System.out.println("|  NOVABANK - SISTEMA DE OPERACIONES  |");
             System.out.println("=======================================");
             System.out.println("1. Gestión de clientes");
@@ -27,204 +47,182 @@ public class Menu {
             System.out.println("4. Consultas");
             System.out.println("5. Salir");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
-                case 1:
-                    gestionarClientes(banco);
-                    break;
-                case 2:
-                    gestionarCuentas(banco);
-                    break;
-                case 3:
-                    operacionesFinancieras(banco);
-                    break;
-                case 4:
-                    consultas(banco);
-                    break;
-                case 5:
-                    System.out.println("Saliendo de la aplicación");
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 1: gestionarClientes(); break;
+                case 2: gestionarCuentas(); break;
+                case 3: operacionesFinancieras(); break;
+                case 4: consultas(); break;
+                case 5: System.out.println("Saliendo de la aplicación..."); break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 5);
     }
 
-    public void gestionarClientes(Banco banco) {
+    private void gestionarClientes() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("--- GESTIÓN DE CLIENTES ---");
+            System.out.println("\n--- GESTIÓN DE CLIENTES ---");
             System.out.println("1. Crear cliente");
             System.out.println("2. Buscar cliente");
             System.out.println("3. Listar clientes");
             System.out.println("4. Volver");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
-                case 1:
-                    menuCliente.altaCliente(banco);
-                    break;
-                case 2:
-                    buscarPorTipo(banco);
-                    break;
-                case 3:
-                    menuCliente.listarClientes(banco);
-                    break;
-                case 4:
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 1: menuCliente.altaCliente(); break;
+                case 2: buscarPorTipo(); break;
+                case 3: menuCliente.listarClientes(); break;
+                case 4: break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 4);
     }
 
-    public void buscarPorTipo(Banco banco) {
+    private void buscarPorTipo() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("--- TIPO DE BUSQUEDA ---");
+            System.out.println("\n--- TIPO DE BÚSQUEDA ---");
             System.out.println("1. Buscar por DNI");
             System.out.println("2. Buscar por ID");
             System.out.println("3. Volver");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
-                case 1:
-                    menuCliente.buscarPorDni(banco);
-                    break;
-                case 2:
-                    menuCliente.buscarPorId(banco);
-                    break;
-                case 3:
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 1: menuCliente.buscarPorDni(); break;
+                case 2: menuCliente.buscarPorId(); break;
+                case 3: break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 3);
-
     }
 
-    public void gestionarCuentas(Banco banco) {
+    private void gestionarCuentas() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("--- GESTIÓN DE CUENTAS ---");
+            System.out.println("\n--- GESTIÓN DE CUENTAS ---");
             System.out.println("1. Crear cuenta");
             System.out.println("2. Listar cuentas de cliente");
             System.out.println("3. Ver información de cuenta");
             System.out.println("4. Volver");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
                 case 1:
-                    String id = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
-                    menuCuentas.crearCuenta(banco, id);
+                    String id = String.valueOf(leerOpcion(sc, "Introduzca el ID del cliente: "));
+                    //menuCuentas.crearCuenta(id); // Actualizaremos este menú más adelante
                     break;
                 case 2:
-                    String idCliente = Validacion.leerEntero(sc, "Introduzca el ID del cliente: ");
-                    menuCuentas.listarCuentas(banco, idCliente);
+                    String idCliente = String.valueOf(leerOpcion(sc, "Introduzca el ID del cliente: "));
+                    //menuCuentas.listarCuentas(idCliente);
                     break;
                 case 3:
-                    String iban = Validacion.leerIban(sc);
-                    menuCuentas.verCuenta(banco, iban);
+                    System.out.print("Introduzca IBAN: ");
+                    String iban = sc.nextLine();
+                    //menuCuentas.verCuenta(iban);
                     break;
-                case 4:
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 4: break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 4);
     }
 
-    public void operacionesFinancieras(Banco banco) {
+    private void operacionesFinancieras() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("--- OPERACIONES FINANCIERAS ---");
+            System.out.println("\n--- OPERACIONES FINANCIERAS ---");
             System.out.println("1. Depositar dinero");
             System.out.println("2. Retirar dinero");
             System.out.println("3. Transferencia entre cuentas");
             System.out.println("4. Volver");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
                 case 1:
-                    String ibanIng = Validacion.leerIban(sc);
-                    String cantidadIng = Validacion.leerDouble(sc, "Introduzca la cantidad a ingresar: ");
-                    menuOperaciones.ingresar(banco, ibanIng, cantidadIng);
+                    System.out.print("IBAN de ingreso: ");
+                    String ibanIng = sc.nextLine();
+                    System.out.print("Cantidad a ingresar: ");
+                    String cantidadIng = sc.nextLine();
+                    //menuOperaciones.ingresar(ibanIng, cantidadIng);
                     break;
                 case 2:
-                    String ibanRet = Validacion.leerIban(sc);
-                    String cantidadRet = Validacion.leerDouble(sc, "Introduzca la cantidad a retirar: ");
-                    menuOperaciones.retirar(banco, ibanRet, cantidadRet);
+                    System.out.print("IBAN de retiro: ");
+                    String ibanRet = sc.nextLine();
+                    System.out.print("Cantidad a retirar: ");
+                    String cantidadRet = sc.nextLine();
+                    //menuOperaciones.retirar(ibanRet, cantidadRet);
                     break;
                 case 3:
-                    System.out.println("Introduzca el IBAN de la cuenta de origen: ");
-                    String ibanOrigen = Validacion.leerIban(sc);
-                    System.out.println("Introduzca el IBAN de la cuenta de destino: ");
-                    String ibanDestino = Validacion.leerIban(sc);
-                    String cantidadTransferencia = Validacion.leerDouble(sc, "Introduzca la cantidad a transferir: ");
-                    menuOperaciones.realizarTransferencia(banco, ibanOrigen, ibanDestino, cantidadTransferencia);
+                    System.out.print("IBAN de origen: ");
+                    String ibanOrigen = sc.nextLine();
+                    System.out.print("IBAN de destino: ");
+                    String ibanDestino = sc.nextLine();
+                    System.out.print("Cantidad a transferir: ");
+                    String cantidadTransferencia = sc.nextLine();
+                    //menuOperaciones.realizarTransferencia(ibanOrigen, ibanDestino, cantidadTransferencia);
                     break;
-                case 4:
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 4: break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 4);
     }
 
-    public void consultas(Banco banco) {
+    private void consultas() {
         Scanner sc = new Scanner(System.in);
         int op;
 
         do {
-            System.out.println("--- CONSULTAS ---");
+            System.out.println("\n--- CONSULTAS ---");
             System.out.println("1. Consultar saldo");
             System.out.println("2. Historial de movimientos");
             System.out.println("3. Movimientos por rango de fechas");
             System.out.println("4. Volver");
 
-            op = Integer.parseInt(Validacion.leerEntero(sc, "\nSeleccione una opción: "));
+            op = leerOpcion(sc, "\nSeleccione una opción: ");
 
             switch (op) {
                 case 1:
-                    String ibanSaldo = Validacion.leerIban(sc);
-                    menuConsultas.consultarSaldo(banco, ibanSaldo);
+                    System.out.print("Introduzca IBAN: ");
+                    String ibanSaldo = sc.nextLine();
+                    //menuConsultas.consultarSaldo(ibanSaldo);
                     break;
                 case 2:
-                    String ibanMov = Validacion.leerIban(sc);
-                    menuConsultas.consultarMovimientos(banco, ibanMov);
+                    System.out.print("Introduzca IBAN: ");
+                    String ibanMov = sc.nextLine();
+                    //menuConsultas.consultarMovimientos(ibanMov);
                     break;
                 case 3:
-                    String ibanFecha = Validacion.leerIban(sc);
-                    String fechaInicioStr = Validacion.leerFecha(sc, "Introduce la fecha de inicio (dd/MM/yyyy): ");
-                    String fechaFinStr = Validacion.leerFecha(sc, "Introduce la fecha de fin (dd/MM/yyyy): ");
-                    DateTimeFormatter formatoEntrada = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    LocalDate fechaInicio = LocalDate.parse(fechaInicioStr, formatoEntrada);
-                    LocalDate fechaFin = LocalDate.parse(fechaFinStr, formatoEntrada);
-                    menuConsultas.consultarMovimientosPorFecha(banco, ibanFecha, fechaInicio, fechaFin);
+                    System.out.print("Introduzca IBAN: ");
+                    String ibanFecha = sc.nextLine();
+                    System.out.print("Fecha de inicio (dd/MM/yyyy): ");
+                    String fechaInicioStr = sc.nextLine();
+                    System.out.print("Fecha de fin (dd/MM/yyyy): ");
+                    String fechaFinStr = sc.nextLine();
+
+                    try {
+                        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                        LocalDate fechaInicio = LocalDate.parse(fechaInicioStr, formato);
+                        LocalDate fechaFin = LocalDate.parse(fechaFinStr, formato);
+                        //menuConsultas.consultarMovimientosPorFecha(ibanFecha, fechaInicio, fechaFin);
+                    } catch (Exception e) {
+                        System.out.println("Error: El formato de las fechas no es correcto.");
+                    }
                     break;
-                case 4:
-                    break;
-                default:
-                    System.out.println("No ha introducido una opción correcta");
-                    break;
+                case 4: break;
+                default: System.out.println("Opción incorrecta."); break;
             }
         } while (op != 4);
     }

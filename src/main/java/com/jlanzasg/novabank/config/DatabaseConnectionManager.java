@@ -26,7 +26,6 @@ public class DatabaseConnectionManager {
         try {
             if (conexion == null || conexion.isClosed()) {
                 conexion = DriverManager.getConnection(URL, USER, PASSWORD);
-                System.out.println("Conexión establecida");
             }
         } catch (SQLException e) {
             System.out.println("Error al conectar con la base de datos");

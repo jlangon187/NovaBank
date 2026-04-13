@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter;
 public class Movimiento {
 
     // Variables
-    private CuentaBancaria cuentaBancaria; // Variable CuentaBancaria para usar su (.getIban) como iban
+    private Cuenta cuentaBancaria; // Variable CuentaBancaria para usar su (.getIban) como iban
     private long id;
     private String tipo;
     private double cantidad;
@@ -16,7 +16,7 @@ public class Movimiento {
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     // Constructor
-    public Movimiento(CuentaBancaria cuentaBancaria, String tipo, double cantidad) {
+    public Movimiento(Cuenta cuentaBancaria, String tipo, double cantidad) {
         this.id = ++contadorMovimiento; // Se incrementa el ID con el contador
         this.cuentaBancaria = cuentaBancaria;
         this.tipo = tipo;
@@ -26,7 +26,7 @@ public class Movimiento {
 
     public long getId() { return id; }
 
-    public CuentaBancaria getCuenta() { return cuentaBancaria; }
+    public Cuenta getCuenta() { return cuentaBancaria; }
 
     public String getTipo() {
         return tipo;
