@@ -1,9 +1,7 @@
-package com.jlanzasg.novabank.negocio;
+package com.jlanzasg.novabank.service;
 
-import com.jlanzasg.novabank.modelo.Cliente;
-import com.jlanzasg.novabank.modelo.CuentaBancaria;
-import com.jlanzasg.novabank.modelo.Movimiento;
-import com.jlanzasg.novabank.modelo.TipoMovimiento;
+import com.jlanzasg.novabank.model.Cliente;
+import com.jlanzasg.novabank.model.CuentaBancaria;
 
 import java.util.Collection;
 import java.util.HashMap;

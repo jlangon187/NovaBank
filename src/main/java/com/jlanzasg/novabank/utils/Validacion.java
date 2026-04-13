@@ -1,6 +1,6 @@
-package com.jlanzasg.novabank.validaciones;
+package com.jlanzasg.novabank.utils;
 
-import com.jlanzasg.novabank.negocio.Banco;
+import com.jlanzasg.novabank.service.Banco;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

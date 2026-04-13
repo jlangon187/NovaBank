@@ -1,9 +1,9 @@
-package com.jlanzasg.novabank.vista;
+package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.modelo.CuentaBancaria;
-import com.jlanzasg.novabank.modelo.Movimiento;
-import com.jlanzasg.novabank.modelo.TipoMovimiento;
-import com.jlanzasg.novabank.negocio.Banco;
+import com.jlanzasg.novabank.model.CuentaBancaria;
+import com.jlanzasg.novabank.model.Movimiento;
+import com.jlanzasg.novabank.model.TipoMovimiento;
+import com.jlanzasg.novabank.service.Banco;
 
 import java.util.Map;
 

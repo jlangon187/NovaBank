@@ -1,9 +1,7 @@
-package com.jlanzasg.novabank.modelo;
+package com.jlanzasg.novabank.model;
 
-// Clase POJO Cliente
 public class Cliente {
 
-    // Variables
     private long id;
     private String nombre;
     private String apellido;
@@ -12,7 +10,6 @@ public class Cliente {
     private String telefono;
     private static long contadorIdCliente = 1000L; // contador para el ID de cliente
 
-    // Constructor
     public Cliente(String nombre, String apellido, String dni, String email, String telefono) {
         this.id = ++contadorIdCliente; // Se incrementa el ID con el contador
         this.nombre = nombre;
