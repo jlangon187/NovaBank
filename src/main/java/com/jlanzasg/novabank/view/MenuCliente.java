@@ -1,8 +1,8 @@
-package com.jlanzasg.novabank.vista;
+package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.modelo.Cliente;
-import com.jlanzasg.novabank.negocio.Banco;
-import com.jlanzasg.novabank.validaciones.Validacion;
+import com.jlanzasg.novabank.model.Cliente;
+import com.jlanzasg.novabank.service.Banco;
+import com.jlanzasg.novabank.utils.Validacion;
 
 import java.util.Collection;
 import java.util.Scanner;

@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.modelo;
+package com.jlanzasg.novabank.model;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
