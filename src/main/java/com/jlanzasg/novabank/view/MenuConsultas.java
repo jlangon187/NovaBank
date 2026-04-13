@@ -1,15 +1,16 @@
 package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.model.CuentaBancaria;
+import com.jlanzasg.novabank.model.Cuenta;
 import com.jlanzasg.novabank.model.Movimiento;
 import com.jlanzasg.novabank.model.TipoMovimiento;
-import com.jlanzasg.novabank.service.Banco;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 public class MenuConsultas {
+
+    /*
 
     // Método para comprobar si existe la cuenta
     public boolean existeCuenta(Banco banco, String iban) {
@@ -26,7 +27,7 @@ public class MenuConsultas {
             System.out.println("No existe cuenta con el IBAN: " + iban);
             return;
         }
-        CuentaBancaria cuentaBancaria = banco.getCuentas().get(iban);
+        Cuenta cuentaBancaria = banco.getCuentas().get(iban);
         System.out.println("Saldo actual: " + cuentaBancaria.getBalance() + " €");
     }
 
@@ -35,7 +36,7 @@ public class MenuConsultas {
     public void consultarMovimientos(Banco banco, String iban) {
         if (existeCuenta(banco, iban)) {
 
-            CuentaBancaria cuentaBancaria = banco.getCuentas().get(iban);
+            Cuenta cuentaBancaria = banco.getCuentas().get(iban);
             Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimientos();
 
             if (movimientos == null || movimientos.isEmpty()) {
@@ -67,7 +68,7 @@ public class MenuConsultas {
     public void consultarMovimientosPorFecha(Banco banco, String iban, LocalDate inicio, LocalDate fin) {
         if (existeCuenta(banco, iban)) {
 
-            CuentaBancaria cuentaBancaria = banco.getCuentas().get(iban);
+            Cuenta cuentaBancaria = banco.getCuentas().get(iban);
             Map<Long, Movimiento> movimientos = cuentaBancaria.getMovimientos();
 
             if (movimientos == null || movimientos.isEmpty()) {
@@ -113,4 +114,6 @@ public class MenuConsultas {
             }
         }
     }
+
+     */
 }
