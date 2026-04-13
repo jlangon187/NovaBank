@@ -1,91 +1,140 @@
 package com.jlanzasg.novabank.view;
 
 import com.jlanzasg.novabank.model.Cliente;
-import com.jlanzasg.novabank.service.Banco;
+import com.jlanzasg.novabank.service.ClienteService;
 import com.jlanzasg.novabank.utils.Validacion;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class MenuCliente {
 
-    public void altaCliente(Banco banco) {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Introduzca los datos del cliente:");
-        String nombre = Validacion.leerNombre(sc,"Nombre: ");
-        String apellido = Validacion.leerNombre(sc,"Apellido: ");
-        String dni = Validacion.leerDni(sc, banco, "DNI: ");
-        String email = Validacion.leerEmail(sc);
-        String telefono = Validacion.leerTelefono(sc);
-        Cliente cliente = new Cliente(nombre, apellido, dni, email, telefono);
-        banco.registrarCliente(cliente);
-        System.out.println("Cliente registrado correctamente");
-        System.out.println("ID cliente: " + cliente.getId());
+    private final ClienteService service;
+
+    public MenuCliente(ClienteService service) {
+        this.service = service;
     }
 
-    public void buscarPorDni(Banco banco) {
+    public void altaCliente() {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("\n--- ALTA DE NUEVO CLIENTE ---");
+
+        boolean registrado = false;
+
+        do {
+            try {
+
+                System.out.print("Nombre: ");
+                String nombre = sc.nextLine();
+
+                System.out.print("Apellido: ");
+                String apellido = sc.nextLine();
+
+                System.out.print("DNI: ");
+                String dni = sc.nextLine().toUpperCase();
+
+                System.out.print("Email: ");
+                String email = sc.nextLine();
+
+                System.out.print("Teléfono: ");
+                String telefono = sc.nextLine();
+
+                Cliente cliente = Cliente.builder()
+                        .nombre(nombre)
+                        .apellido(apellido)
+                        .dni(dni)
+                        .email(email)
+                        .telefono(telefono)
+                        .build();
+
+                service.registrarCliente(cliente);
+                System.out.println("\nCliente registrado correctamente con ID: " + cliente.getId());
+                registrado = true;
+
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                System.out.println("\nError: " + e.getMessage());
+                System.out.println("Introduzca todos los datos correctamente");
+            } catch (Exception e) {
+                System.out.println("\nError crítico: " + e.getMessage());
+            }
+        } while (!registrado);
+    }
+
+    public void buscarPorId() {
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Introduzca el DNI del cliente que desea buscar: ");
-        String dniBuscar = sc.nextLine().toUpperCase();
-        Collection<Cliente> clientes = banco.buscarClientePorDni(dniBuscar);
-        if (clientes.isEmpty()) {
-            System.out.println("\nERROR: No se encontró ningún cliente con DNI " + dniBuscar);
+        String idStr;
+        do {
+            System.out.print("Introduzca el ID del cliente que desea buscar: ");
+            idStr = sc.nextLine();
+            if (!Validacion.esLong(idStr)) System.out.println("Error: Debe introducir un número entero válido.");
+        } while (!Validacion.esLong(idStr));
+
+        Long idBuscar = Long.parseLong(idStr);
+        Optional<Cliente> clienteOptional = service.buscarClientePorId(idBuscar);
+
+        if (clienteOptional.isEmpty()) {
+            System.out.println("\nError: No se encontró ningún cliente con ID " + idBuscar);
         } else {
-            System.out.println("\nCliente encontrado:");
-            System.out.println("ID: " + clientes.iterator().next().getId());
-            System.out.println("Nombre: " + clientes.iterator().next().getNombre() + " " + clientes.iterator().next().getApellido());
-            System.out.println("DNI: " + clientes.iterator().next().getDni());
-            System.out.println("Email: " + clientes.iterator().next().getEmail());
-            System.out.println("Teléfono: " + clientes.iterator().next().getTelefono());
+            Cliente cliente = clienteOptional.get();
+            System.out.println("\n Cliente encontrado:");
+            System.out.println("ID: " + cliente.getId());
+            System.out.println("Nombre: " + cliente.getNombre() + " " + cliente.getApellido());
+            System.out.println("DNI: " + cliente.getDni());
+            System.out.println("Email: " + cliente.getEmail());
+            System.out.println("Teléfono: " + cliente.getTelefono());
         }
     }
 
-    public void buscarPorId(Banco banco) {
+    public void buscarPorDni() {
         Scanner sc = new Scanner(System.in);
 
-        String valor = Validacion.leerEntero(sc, "Introduzca el ID del cliente que desea buscar: ");
-        int idBuscar = Integer.parseInt(valor);
-        Collection<Cliente> clientes = banco.buscarClientePorId(idBuscar);
-        if (clientes.isEmpty()) {
-            System.out.println("\nERROR: No se encontró ningún cliente con ID " + idBuscar);
+        String dniBuscar;
+        do {
+            System.out.print("Introduzca el DNI del cliente que desea buscar: ");
+            dniBuscar = sc.nextLine().toUpperCase();
+            if (!Validacion.esDniValido(dniBuscar)) System.out.println("Error: Formato de DNI incorrecto.");
+        } while (!Validacion.esDniValido(dniBuscar));
+
+        Optional<Cliente> clienteOptional = service.buscarClientePorDni(dniBuscar);
+
+        if (clienteOptional.isEmpty()) {
+            System.out.println("\nError: No se encontró ningún cliente con DNI " + dniBuscar);
         } else {
+            Cliente cliente = clienteOptional.get();
             System.out.println("\nCliente encontrado:");
-            System.out.println("ID: " + clientes.iterator().next().getId());
-            System.out.println("Nombre: " + clientes.iterator().next().getNombre() + " " + clientes.iterator().next().getApellido());
-            System.out.println("DNI: " + clientes.iterator().next().getDni());
-            System.out.println("Email: " + clientes.iterator().next().getEmail());
-            System.out.println("Teléfono: " + clientes.iterator().next().getTelefono());
+            System.out.println("ID: " + cliente.getId());
+            System.out.println("Nombre: " + cliente.getNombre() + " " + cliente.getApellido());
+            System.out.println("DNI: " + cliente.getDni());
+            System.out.println("Email: " + cliente.getEmail());
+            System.out.println("Teléfono: " + cliente.getTelefono());
         }
     }
 
-    public void listarClientes(Banco banco) {
+    public void listarClientes() {
 
-        if (banco.getClientes().isEmpty()) {
-            System.out.println("No hay clientes registrados");
+        List<Cliente> clientes = service.listarClientes();
+
+        if (clientes.isEmpty()) {
+            System.out.println("\nNo hay clientes registrados en la base de datos.");
             return;
         }
 
-        System.out.println("LISTA DE CLIENTES");
+        System.out.println("\nLISTA DE CLIENTES");
+        System.out.println("---------------------------------------------------------------------------------------------");
+        System.out.printf("%-6s | %-20s | %-10s | %-30s | %-12s%n", "ID", "Nombre", "DNI", "Email", "Teléfono");
         System.out.println("---------------------------------------------------------------------------------------------");
 
-        // Encabezado
-        System.out.printf("%-6s | %-20s | %-10s | %-30s | %-12s%n",
-                "ID", "Nombre", "DNI", "Email", "Teléfono");
-
-        System.out.println("---------------------------------------------------------------------------------------------");
-
-        // Filas
-        banco.getClientes().forEach((id, cliente) ->
-                System.out.printf("%-6d | %-20s | %-10s | %-30s | %-12s%n",
-                        id,
-                        cliente.getNombre() + " " + cliente.getApellido(),
-                        cliente.getDni(),
-                        cliente.getEmail(),
-                        cliente.getTelefono()
-                )
-        );
+        // Iteramos la lista de forma mucho más sencilla
+        for (Cliente cliente : clientes) {
+            System.out.printf("%-6d | %-20s | %-10s | %-30s | %-12s%n",
+                    cliente.getId(),
+                    cliente.getNombre() + " " + cliente.getApellido(),
+                    cliente.getDni(),
+                    cliente.getEmail(),
+                    cliente.getTelefono()
+            );
+        }
     }
-
-
 }
