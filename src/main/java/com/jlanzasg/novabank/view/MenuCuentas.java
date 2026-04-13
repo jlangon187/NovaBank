@@ -1,8 +1,8 @@
-package com.jlanzasg.novabank.vista;
+package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.modelo.Cliente;
-import com.jlanzasg.novabank.modelo.CuentaBancaria;
-import com.jlanzasg.novabank.negocio.Banco;
+import com.jlanzasg.novabank.model.Cliente;
+import com.jlanzasg.novabank.model.CuentaBancaria;
+import com.jlanzasg.novabank.service.Banco;
 import java.time.format.DateTimeFormatter;
 
 public class MenuCuentas {

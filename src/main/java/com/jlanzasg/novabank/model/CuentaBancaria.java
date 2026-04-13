@@ -1,20 +1,26 @@
-package com.jlanzasg.novabank.modelo;
+package com.jlanzasg.novabank.model;
+
+import lombok.AccessLevel;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-// Clase CuentaBancaria que maneja operaciones en la cuenta bancaria como los movimientos de la cuenta
+@Getter
 public class CuentaBancaria {
 
-    // Variables
     private Cliente cliente; // Variable Cliente para pasársela al constructor
     private String iban;
     private Double balance;
     private LocalDateTime fecha;
+
+    @Getter(AccessLevel.NONE)
     private long numeroCuenta;
+    @Getter(AccessLevel.NONE)
     private static long contadorCuenta = 0L; // contador para el ID de la cuenta
+
     private Map<Long, Movimiento> movimientos; // Map con la lista de movimientos
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
@@ -26,24 +32,6 @@ public class CuentaBancaria {
         this.fecha = LocalDateTime.now(); // Se crea la cuenta con la fecha y hora actual
         this.movimientos = new HashMap<>();
     }
-
-    public String getIban() {
-        return iban;
-    }
-
-    public Double getBalance() {
-        return balance;
-    }
-
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-
-    public Map<Long, Movimiento> getMovimiento() {
-        return movimientos;
-    }
-
-    public Cliente getCliente() { return cliente; }
 
     // Registro de movimientos en el HashMap
     public void registrarMovimiento(Movimiento movimiento) {
@@ -96,7 +84,7 @@ public class CuentaBancaria {
     @Override
     public String toString() {
         return "CuentaBancaria{" +
-                "cliente=" + cliente +
+                "cliente=" + cliente.getNombre() +
                 ", iban='" + iban + '\'' +
                 ", balance=" + balance +
                 ", fecha=" + fecha.format(FORMATO_FECHA) +

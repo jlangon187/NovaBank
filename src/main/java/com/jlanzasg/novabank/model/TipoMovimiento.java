@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.modelo;
+package com.jlanzasg.novabank.model;
 
 // Clase Enum con los tipos de movimiento de operaciones financieras
 public enum TipoMovimiento {

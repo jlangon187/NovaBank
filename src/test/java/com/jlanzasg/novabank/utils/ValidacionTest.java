@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.validaciones;
+package com.jlanzasg.novabank.utils;
 
 import org.junit.jupiter.api.Test;
 
