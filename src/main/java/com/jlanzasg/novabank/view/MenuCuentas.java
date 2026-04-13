@@ -1,12 +1,8 @@
 package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.model.Cliente;
-import com.jlanzasg.novabank.model.CuentaBancaria;
-import com.jlanzasg.novabank.service.Banco;
-import java.time.format.DateTimeFormatter;
-
 public class MenuCuentas {
 
+    /*
     // Método para crear una cuenta para un cliente
     public void crearCuenta(Banco banco, String id) {
         try {
@@ -14,7 +10,7 @@ public class MenuCuentas {
                 throw new RuntimeException("El cliente no existe");
             }
             Cliente cliente = banco.buscarClientePorId(Integer.parseInt(id)).iterator().next();
-            CuentaBancaria cuenta = new CuentaBancaria(cliente);
+            Cuenta cuenta = new Cuenta(cliente);
             banco.registrarCuenta(cuenta);
             System.out.println("La cuenta se ha creado correctamente");
         } catch (RuntimeException e) {
@@ -59,12 +55,12 @@ public class MenuCuentas {
             return;
         }
 
-        CuentaBancaria cuenta = banco.getCuentas().get(iban);
+        Cuenta cuenta = banco.getCuentas().get(iban);
         DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
         System.out.println("\nNúmero de cuenta: " + cuenta.getIban());
         System.out.println("Titular: " + cuenta.getCliente().getNombre() + " " + cuenta.getCliente().getApellido());
         System.out.println("Saldo: " + cuenta.getBalance() + " €");
         System.out.println("Fecha de creación: " + cuenta.getFecha().format(formatoFecha));
-    }
+    }*/
 }

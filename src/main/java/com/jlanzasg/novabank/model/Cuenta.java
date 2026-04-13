@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public class CuentaBancaria {
+public class Cuenta {
 
     private Cliente cliente; // Variable Cliente para pasársela al constructor
     private String iban;
@@ -24,7 +24,7 @@ public class CuentaBancaria {
     private Map<Long, Movimiento> movimientos; // Map con la lista de movimientos
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
-    public CuentaBancaria(Cliente cliente) {
+    public Cuenta(Cliente cliente) {
         this.numeroCuenta = ++contadorCuenta; // Se incrementa el ID con el contador
         this.cliente = cliente;
         this.iban = generarIban(); // Se genera el IBAN a través del generador

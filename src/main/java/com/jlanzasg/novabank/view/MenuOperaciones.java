@@ -1,18 +1,12 @@
 package com.jlanzasg.novabank.view;
 
-import com.jlanzasg.novabank.model.CuentaBancaria;
-import com.jlanzasg.novabank.model.Movimiento;
-import com.jlanzasg.novabank.model.TipoMovimiento;
-import com.jlanzasg.novabank.service.Banco;
-
-import java.util.Map;
-
 public class MenuOperaciones {
 
+    /*
     // Método para ingresar dinero a una cuenta
     public void ingresar(Banco banco, String iban, String cantidad) {
         Double cantidadDouble = Double.parseDouble(cantidad);
-        CuentaBancaria cuenta = banco.getCuentas().get(iban);
+        Cuenta cuenta = banco.getCuentas().get(iban);
         if (cuenta == null) {
             System.out.println("La cuenta no existe.");
             return;
@@ -33,7 +27,7 @@ public class MenuOperaciones {
     // Método para retirar dinero de una cuenta
     public void retirar(Banco banco, String iban, String cantidad) {
         double cantidadDouble = Double.parseDouble(cantidad);
-        CuentaBancaria cuenta = banco.getCuentas().get(iban);
+        Cuenta cuenta = banco.getCuentas().get(iban);
         if (cuenta == null) {
             System.out.println("La cuenta no existe.");
             return;
@@ -59,7 +53,7 @@ public class MenuOperaciones {
     // 4 - Que la cuenta de origen tenga el saldo suficiente para transferir
     public boolean esOperacionValida(Banco banco, String ibanOrigen, String ibanDestino, String cantidad) {
         double cantidadDouble = Double.parseDouble(cantidad);
-        Map<String, CuentaBancaria> cuentas = banco.getCuentas();
+        Map<String, Cuenta> cuentas = banco.getCuentas();
 
         if (!cuentas.containsKey(ibanOrigen)) {
             System.out.println("El IBAN de origen no existe");
@@ -77,7 +71,7 @@ public class MenuOperaciones {
             System.out.println("El cantidad debe ser mayor a 0 €");
             return false;
         }
-        CuentaBancaria cuentaOrigen = cuentas.get(ibanOrigen);
+        Cuenta cuentaOrigen = cuentas.get(ibanOrigen);
         if (cuentaOrigen.getBalance() < cantidadDouble) {
             System.out.println("Saldo insuficiente");
             return false;
@@ -96,9 +90,9 @@ public class MenuOperaciones {
 
             if (esOperacionValida(banco, ibanOrigen, ibanDestino, cantidad)) {
 
-                Map<String, CuentaBancaria> cuentas = banco.getCuentas();
-                CuentaBancaria cuentaOrigen = cuentas.get(ibanOrigen);
-                CuentaBancaria cuentaDestino = cuentas.get(ibanDestino);
+                Map<String, Cuenta> cuentas = banco.getCuentas();
+                Cuenta cuentaOrigen = cuentas.get(ibanOrigen);
+                Cuenta cuentaDestino = cuentas.get(ibanDestino);
 
                 if (cuentaOrigen.retirar(cantidadDouble)) {
                     cuentaDestino.ingresar(cantidadDouble);
@@ -120,4 +114,5 @@ public class MenuOperaciones {
             throw new RuntimeException("Error inesperado al realizar la transferencia");
         }
     }
+     */
 }
