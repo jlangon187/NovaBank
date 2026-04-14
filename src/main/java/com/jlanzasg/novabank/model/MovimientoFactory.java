@@ -1,7 +1,17 @@
 package com.jlanzasg.novabank.model;
 
+/**
+ * The type Movimiento factory.
+ */
 public class MovimientoFactory {
 
+    /**
+     * Crear deposito movimiento.
+     *
+     * @param cuentaId the cuenta id
+     * @param cantidad the cantidad
+     * @return the movimiento
+     */
     public static Movimiento crearDeposito(Long cuentaId, Double cantidad) {
         return Movimiento.builder()
                 .cuentaId(cuentaId)
@@ -10,6 +20,13 @@ public class MovimientoFactory {
                 .build();
     }
 
+    /**
+     * Crear retiro movimiento.
+     *
+     * @param cuentaId the cuenta id
+     * @param cantidad the cantidad
+     * @return the movimiento
+     */
     public static Movimiento crearRetiro(Long cuentaId, Double cantidad) {
         return Movimiento.builder()
                 .cuentaId(cuentaId)
@@ -18,6 +35,13 @@ public class MovimientoFactory {
                 .build();
     }
 
+    /**
+     * Crear transferencia saliente movimiento.
+     *
+     * @param cuentaId the cuenta id
+     * @param cantidad the cantidad
+     * @return the movimiento
+     */
     public static Movimiento crearTransferenciaSaliente(Long cuentaId, Double cantidad) {
         return Movimiento.builder()
                 .cuentaId(cuentaId)
@@ -26,6 +50,13 @@ public class MovimientoFactory {
                 .build();
     }
 
+    /**
+     * Crear transferencia entrante movimiento.
+     *
+     * @param cuentaId the cuenta id
+     * @param cantidad the cantidad
+     * @return the movimiento
+     */
     public static Movimiento crearTransferenciaEntrante(Long cuentaId, Double cantidad) {
         return Movimiento.builder()
                 .cuentaId(cuentaId)
