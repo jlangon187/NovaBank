@@ -8,14 +8,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+/**
+ * The type Menu cliente.
+ */
 public class MenuCliente {
 
     private final ClienteService service;
 
+    /**
+     * Instantiates a new Menu cliente.
+     *
+     * @param service the service
+     */
     public MenuCliente(ClienteService service) {
         this.service = service;
     }
 
+    /**
+     * Alta cliente.
+     */
     public void altaCliente() {
         Scanner sc = new Scanner(System.in);
         System.out.println("\n--- ALTA DE NUEVO CLIENTE ---");
@@ -61,32 +72,46 @@ public class MenuCliente {
         } while (!registrado);
     }
 
+    /**
+     * Buscar por id.
+     */
     public void buscarPorId() {
         Scanner sc = new Scanner(System.in);
+        Long idBuscar = null;
 
-        String idStr;
-        do {
+        while (idBuscar == null) {
             System.out.print("Introduzca el ID del cliente que desea buscar: ");
-            idStr = sc.nextLine();
-            if (!Validacion.esLong(idStr)) System.out.println("Error: Debe introducir un número entero válido.");
-        } while (!Validacion.esLong(idStr));
+            try {
+                idBuscar = Long.parseLong(sc.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Debe introducir un número entero válido.");
+            }
+        }
 
-        Long idBuscar = Long.parseLong(idStr);
-        Optional<Cliente> clienteOptional = service.buscarClientePorId(idBuscar);
+        try {
+            Optional<Cliente> clienteOptional = service.buscarClientePorId(idBuscar);
 
-        if (clienteOptional.isEmpty()) {
-            System.out.println("\nError: No se encontró ningún cliente con ID " + idBuscar);
-        } else {
-            Cliente cliente = clienteOptional.get();
-            System.out.println("\n Cliente encontrado:");
-            System.out.println("ID: " + cliente.getId());
-            System.out.println("Nombre: " + cliente.getNombre() + " " + cliente.getApellido());
-            System.out.println("DNI: " + cliente.getDni());
-            System.out.println("Email: " + cliente.getEmail());
-            System.out.println("Teléfono: " + cliente.getTelefono());
+            if (clienteOptional.isEmpty()) {
+                System.out.println("\nError: No se encontró ningún cliente con ID " + idBuscar);
+            } else {
+
+                Cliente cliente = clienteOptional.get();
+
+                System.out.println("\nCliente encontrado:");
+                System.out.println("ID: " + cliente.getId());
+                System.out.println("Nombre: " + cliente.getNombre() + " " + cliente.getApellido());
+                System.out.println("DNI: " + cliente.getDni());
+                System.out.println("Email: " + cliente.getEmail());
+                System.out.println("Teléfono: " + cliente.getTelefono());
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("\nError: " + e.getMessage());
         }
     }
 
+    /**
+     * Buscar por dni.
+     */
     public void buscarPorDni() {
         Scanner sc = new Scanner(System.in);
 
@@ -112,6 +137,9 @@ public class MenuCliente {
         }
     }
 
+    /**
+     * Listar clientes.
+     */
     public void listarClientes() {
 
         List<Cliente> clientes = service.listarClientes();
@@ -135,6 +163,28 @@ public class MenuCliente {
                     cliente.getEmail(),
                     cliente.getTelefono()
             );
+        }
+    }
+
+    /**
+     * Baja cliente.
+     */
+    public void bajaCliente() {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("\nIntroduzca el ID del cliente que desea eliminar: ");
+
+        try {
+            Long id = Long.parseLong(sc.nextLine());
+
+            service.eliminarCliente(id);
+            System.out.println("Cliente eliminado correctamente de la base de datos.");
+
+        } catch (NumberFormatException e) {
+            System.out.println("Error: Debe introducir un número entero válido.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error crítico: " + e.getMessage());
         }
     }
 }
