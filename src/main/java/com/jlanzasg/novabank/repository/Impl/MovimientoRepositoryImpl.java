@@ -67,7 +67,13 @@ public class MovimientoRepositoryImpl implements MovimientoRepository {
 
     @Override
     public List<Movimiento> buscarPorCuentaIdYFechas(Long cuentaId, LocalDateTime inicio, LocalDateTime fin) {
-        return buscarPorCuentaId(cuentaId);
+
+        List<Movimiento> todosLosMovimientos = buscarPorCuentaId(cuentaId);
+
+        return todosLosMovimientos.stream()
+                .filter(m -> !m.getFecha().isBefore(inicio))
+                .filter(m -> !m.getFecha().isAfter(fin))
+                .toList();
     }
 
     /**
