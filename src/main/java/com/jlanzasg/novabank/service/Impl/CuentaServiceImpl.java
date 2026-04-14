@@ -1,8 +1,10 @@
-package com.jlanzasg.novabank.service;
+package com.jlanzasg.novabank.service.Impl;
 
 import com.jlanzasg.novabank.model.Cliente;
 import com.jlanzasg.novabank.model.Cuenta;
 import com.jlanzasg.novabank.repository.CuentaRepository;
+import com.jlanzasg.novabank.service.ClienteService;
+import com.jlanzasg.novabank.service.CuentaService;
 import com.jlanzasg.novabank.utils.Validacion;
 
 import java.util.List;
@@ -11,7 +13,7 @@ import java.util.Optional;
 /**
  * The type Cuenta service.
  */
-public class CuentaServiceImpl implements CuentaService{
+public class CuentaServiceImpl implements CuentaService {
 
     private final CuentaRepository repositorio;
     private final ClienteService clienteService;

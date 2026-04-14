@@ -2,6 +2,7 @@ package com.jlanzasg.novabank.repository;
 
 import com.jlanzasg.novabank.model.Movimiento;
 
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,4 +36,14 @@ public interface MovimientoRepository {
      * @return the list
      */
     List<Movimiento> buscarPorCuentaIdYFechas(Long cuentaId, LocalDateTime inicio, LocalDateTime fin);
+
+    /**
+     * Guardar movimiento.
+     *
+     * @param movimiento the movimiento
+     * @param conn       the conn
+     * @return the movimiento
+     */
+// Metodo transactional
+    Movimiento guardar(Movimiento movimiento, Connection conn);
 }

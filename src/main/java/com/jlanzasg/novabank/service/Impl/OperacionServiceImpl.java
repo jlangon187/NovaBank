@@ -1,6 +1,8 @@
-package com.jlanzasg.novabank.service;
+package com.jlanzasg.novabank.service.Impl;
 
-public class OperacionServiceImpl implements OperacionService{
+import com.jlanzasg.novabank.service.OperacionService;
+
+public class OperacionServiceImpl implements OperacionService {
 
 
     // Método para ingresar el dinero

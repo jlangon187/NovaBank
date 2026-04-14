@@ -3,6 +3,7 @@ package com.jlanzasg.novabank.repository;
 import com.jlanzasg.novabank.model.Cuenta;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,7 @@ public interface CuentaRepository {
 
     /**
      * Buscar por id optional.
+     *
      * @param id
      * @return
      */
@@ -36,6 +38,7 @@ public interface CuentaRepository {
 
     /**
      * Listar cuentas por cliente list.
+     *
      * @return
      */
     List<Cuenta> buscarPorClienteId(Long clienteId);
@@ -51,7 +54,15 @@ public interface CuentaRepository {
 
     /**
      * Obtener ultimo id.
+     *
      * @return
      */
     Long obtenerUltimoId();
+
+
+    // Métodos transaccionales
+
+    Optional<Cuenta> buscarPorNumero(String numeroCuenta, Connection conn);
+
+    Cuenta actualizarSaldo(Long cuentaId, BigDecimal nuevoSaldo, Connection conn);
 }

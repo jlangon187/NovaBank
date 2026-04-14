@@ -1,7 +1,8 @@
-package com.jlanzasg.novabank.repository;
+package com.jlanzasg.novabank.repository.Impl;
 
 import com.jlanzasg.novabank.config.DatabaseConnectionManager;
 import com.jlanzasg.novabank.model.Cliente;
+import com.jlanzasg.novabank.repository.ClienteRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.Optional;
 /**
  * The type Cliente repositoriy jdbc.
  */
-public class ClienteRepositoryJdbc implements ClienteRepository {
+public class ClienteRepositoryImpl implements ClienteRepository {
 
     @Override
     public Cliente guardar(Cliente cliente) {
@@ -108,7 +109,6 @@ public class ClienteRepositoryJdbc implements ClienteRepository {
         } catch (SQLException e) {
             throw new RuntimeException("No se ha podido eliminar el cliente con el ID: " + id, e);
         }
-
     }
 
     /**

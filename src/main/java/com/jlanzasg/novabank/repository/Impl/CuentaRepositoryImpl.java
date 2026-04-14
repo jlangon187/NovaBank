@@ -1,9 +1,11 @@
-package com.jlanzasg.novabank.repository;
+package com.jlanzasg.novabank.repository.Impl;
 
 import com.jlanzasg.novabank.config.DatabaseConnectionManager;
 import com.jlanzasg.novabank.model.Cliente;
 import com.jlanzasg.novabank.model.Cuenta;
+import com.jlanzasg.novabank.repository.CuentaRepository;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,7 @@ import java.util.Optional;
 /**
  * The type Cuenta repositoriy jdbc.
  */
-public class CuentaRepositoryJdbc implements CuentaRepository {
+public class CuentaRepositoryImpl implements CuentaRepository {
 
     @Override
     public Cuenta guardar(Cuenta cuenta) {
@@ -130,6 +132,16 @@ public class CuentaRepositoryJdbc implements CuentaRepository {
             throw new RuntimeException("No se ha podido obtener el ultimo id de la cuenta", e);
         }
         return 0L;
+    }
+
+    @Override
+    public Optional<Cuenta> buscarPorNumero(String numeroCuenta, Connection conn) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Cuenta actualizarSaldo(Long cuentaId, BigDecimal nuevoSaldo, Connection conn) {
+        return null;
     }
 
     /**
