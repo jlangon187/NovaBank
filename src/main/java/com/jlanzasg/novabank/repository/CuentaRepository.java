@@ -31,15 +31,16 @@ public interface CuentaRepository {
     /**
      * Buscar por id optional.
      *
-     * @param id
-     * @return
+     * @param id the id
+     * @return the optional
      */
     Optional<Cuenta> buscarPorId(Long id);
 
     /**
      * Listar cuentas por cliente list.
      *
-     * @return
+     * @param clienteId the cliente id
+     * @return the list
      */
     List<Cuenta> buscarPorClienteId(Long clienteId);
 
@@ -55,14 +56,29 @@ public interface CuentaRepository {
     /**
      * Obtener ultimo id.
      *
-     * @return
+     * @return the long
      */
     Long obtenerUltimoId();
 
 
     // Métodos transaccionales
 
+    /**
+     * Buscar por numero optional.
+     *
+     * @param numeroCuenta the numero cuenta
+     * @param conn         the conn
+     * @return the optional
+     */
     Optional<Cuenta> buscarPorNumero(String numeroCuenta, Connection conn);
 
-    Cuenta actualizarSaldo(Long cuentaId, BigDecimal nuevoSaldo, Connection conn);
+    /**
+     * Actualizar saldo cuenta.
+     *
+     * @param cuentaId   the cuenta id
+     * @param nuevoSaldo the nuevo saldo
+     * @param conn       the conn
+     * @return the cuenta
+     */
+    Cuenta actualizarSaldo(Long cuentaId, Double nuevoSaldo, Connection conn);
 }
