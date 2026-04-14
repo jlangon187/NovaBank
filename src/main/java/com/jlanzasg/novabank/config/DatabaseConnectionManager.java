@@ -5,32 +5,36 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * The type Conexion db.
+ * The type Database connection manager.
  */
 public class DatabaseConnectionManager {
-    private static Connection conexion;
     private static final String URL = "jdbc:postgresql://localhost:5432/novabank_db";
     private static final String USER = "postgres";
     private static final String PASSWORD = "root";
 
-    private DatabaseConnectionManager() {
-        System.out.println("Iniciando conexion");
+    private static DatabaseConnectionManager instance;
+
+    private DatabaseConnectionManager() {}
+
+    /**
+     * Gets instance.
+     *
+     * @return the instance
+     */
+    public static DatabaseConnectionManager getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnectionManager();
+        }
+        return instance;
     }
 
     /**
      * Gets conexion.
      *
      * @return the conexion
+     * @throws SQLException the sql exception
      */
-    public static Connection getConexion() {
-        try {
-            if (conexion == null || conexion.isClosed()) {
-                conexion = DriverManager.getConnection(URL, USER, PASSWORD);
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al conectar con la base de datos");
-            throw new RuntimeException("Fallo en la conexión: " + e.getMessage());
-        }
-        return conexion;
+    public static Connection getConexion() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 }

@@ -29,12 +29,12 @@ public class ClienteRepositoryImpl implements ClienteRepository {
             stmt.setString(5, cliente.getTelefono());
 
             stmt.executeUpdate();
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                Long id = rs.getLong(1);
-                cliente.setId(id);
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    Long id = rs.getLong(1);
+                    cliente.setId(id);
+                }
             }
-            rs.close();
         } catch (SQLException e) {
             throw new RuntimeException("Error al guardar el cliente con el DNI: " + cliente.getDni(), e);
         }
