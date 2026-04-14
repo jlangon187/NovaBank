@@ -135,13 +135,37 @@ public class CuentaRepositoryImpl implements CuentaRepository {
     }
 
     @Override
-    public Optional<Cuenta> buscarPorNumero(String numeroCuenta, Connection conn) {
-        return Optional.empty();
+    public Optional<Cuenta> buscarPorNumero(String iban, Connection conn) {
+        String sql = "SELECT cu.*, cl.nombre, cl.apellidos " +
+                "FROM cuentas cu " +
+                "INNER JOIN clientes cl ON cu.cliente_id = cl.id " +
+                "WHERE cu.numero_cuenta = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, iban);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapearCuenta(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error buscando la cuenta en transacción con IBAN: " + iban, e);
+        }
     }
 
     @Override
-    public Cuenta actualizarSaldo(Long cuentaId, BigDecimal nuevoSaldo, Connection conn) {
-        return null;
+    public Cuenta actualizarSaldo(Long cuentaId, Double nuevoSaldo, Connection conn) {
+        String sql = "UPDATE cuentas SET saldo = ? WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, nuevoSaldo);
+            stmt.setLong(2, cuentaId);
+            stmt.executeUpdate();
+
+            // Ojo: usamos el buscar transaccional para no romper el hilo
+            return buscarPorId(cuentaId).orElse(null);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al actualizar saldo en transacción", e);
+        }
     }
 
     /**
