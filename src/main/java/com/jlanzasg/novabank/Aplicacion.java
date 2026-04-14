@@ -1,21 +1,21 @@
 package com.jlanzasg.novabank;
 
 import com.jlanzasg.novabank.repository.ClienteRepository;
-import com.jlanzasg.novabank.repository.ClienteRepositoryJdbc;
+import com.jlanzasg.novabank.repository.Impl.ClienteRepositoryImpl;
 import com.jlanzasg.novabank.repository.CuentaRepository;
-import com.jlanzasg.novabank.repository.CuentaRepositoryJdbc;
+import com.jlanzasg.novabank.repository.Impl.CuentaRepositoryImpl;
 import com.jlanzasg.novabank.service.ClienteService;
-import com.jlanzasg.novabank.service.ClienteServiceImpl;
+import com.jlanzasg.novabank.service.Impl.ClienteServiceImpl;
 import com.jlanzasg.novabank.service.CuentaService;
-import com.jlanzasg.novabank.service.CuentaServiceImpl;
+import com.jlanzasg.novabank.service.Impl.CuentaServiceImpl;
 import com.jlanzasg.novabank.view.*;
 
 
 public class Aplicacion {
     public static void main(String[] args) {
 
-        ClienteRepository clienteRepo = new ClienteRepositoryJdbc();
-        CuentaRepository cuentaRepo = new CuentaRepositoryJdbc();
+        ClienteRepository clienteRepo = new ClienteRepositoryImpl();
+        CuentaRepository cuentaRepo = new CuentaRepositoryImpl();
         ClienteService clienteService = new ClienteServiceImpl(clienteRepo);
         CuentaService cuentaService = new CuentaServiceImpl(cuentaRepo, clienteService);
 
