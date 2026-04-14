@@ -7,14 +7,27 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * The type Menu cuentas.
+ */
 public class MenuCuentas {
 
     private final CuentaService service;
 
+    /**
+     * Instantiates a new Menu cuentas.
+     *
+     * @param service the service
+     */
     public MenuCuentas(CuentaService service) {
         this.service = service;
     }
 
+    /**
+     * Crear cuenta.
+     *
+     * @param idStr the id str
+     */
     public void crearCuenta(String idStr) {
         try {
             Long idCliente = Long.parseLong(idStr);
@@ -32,6 +45,11 @@ public class MenuCuentas {
         }
     }
 
+    /**
+     * Listar cuentas.
+     *
+     * @param idClienteStr the id cliente str
+     */
     public void listarCuentas(String idClienteStr) {
         try {
             Long idCliente = Long.parseLong(idClienteStr);
@@ -58,6 +76,11 @@ public class MenuCuentas {
         }
     }
 
+    /**
+     * Ver cuenta.
+     *
+     * @param iban the iban
+     */
     public void verCuenta(String iban) {
         try {
             Optional<Cuenta> cuentaOpt = service.consultarCuenta(iban);
