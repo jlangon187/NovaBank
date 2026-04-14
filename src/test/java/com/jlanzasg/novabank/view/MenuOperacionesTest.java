@@ -15,7 +15,7 @@ class MenuOperacionesTest {
 
     @BeforeEach
     void setUp() {
-        menuOperaciones = new MenuOperaciones();
+       // menuOperaciones = new MenuOperaciones();
 
         //Cliente c1 = new Cliente("Emisor", "A", "11111111A", "a@a.com", "111111111");
         //Cliente c2 = new Cliente("Receptor", "B", "22222222B", "b@b.com", "222222222");

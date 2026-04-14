@@ -6,6 +6,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
+/**
+ * The type Menu.
+ */
 public class Menu {
 
     private final MenuCliente menuCliente;
@@ -13,6 +16,14 @@ public class Menu {
     private final MenuOperaciones menuOperaciones;
     private final MenuConsultas menuConsultas;
 
+    /**
+     * Instantiates a new Menu.
+     *
+     * @param menuCliente     the menu cliente
+     * @param menuCuentas     the menu cuentas
+     * @param menuOperaciones the menu operaciones
+     * @param menuConsultas   the menu consultas
+     */
     public Menu(MenuCliente menuCliente, MenuCuentas menuCuentas,
                 MenuOperaciones menuOperaciones, MenuConsultas menuConsultas) {
         this.menuCliente = menuCliente;
@@ -22,17 +33,19 @@ public class Menu {
     }
 
     private int leerOpcion(Scanner sc, String mensaje) {
-        String entrada;
-        do {
+        while (true) {
             System.out.print(mensaje);
-            entrada = sc.nextLine();
-            if (!Validacion.esEntero(entrada)) {
-                System.out.println("Error: Debe introducir un número válido.");
+            try {
+                return Integer.parseInt(sc.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Debe introducir un número entero válido.");
             }
-        } while (!Validacion.esEntero(entrada));
-        return Integer.parseInt(entrada);
+        }
     }
 
+    /**
+     * Menu principal.
+     */
     public void menuPrincipal() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -60,6 +73,9 @@ public class Menu {
         } while (op != 5);
     }
 
+    /**
+     * Menu de gestion de clientes
+     */
     private void gestionarClientes() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -69,7 +85,8 @@ public class Menu {
             System.out.println("1. Crear cliente");
             System.out.println("2. Buscar cliente");
             System.out.println("3. Listar clientes");
-            System.out.println("4. Volver");
+            System.out.println("4. Eliminar cliente");
+            System.out.println("5. Volver");
 
             op = leerOpcion(sc, "\nSeleccione una opción: ");
 
@@ -77,12 +94,16 @@ public class Menu {
                 case 1: menuCliente.altaCliente(); break;
                 case 2: buscarPorTipo(); break;
                 case 3: menuCliente.listarClientes(); break;
-                case 4: break;
+                case 4: menuCliente.bajaCliente(); break;
+                case 5: break;
                 default: System.out.println("Opción incorrecta."); break;
             }
-        } while (op != 4);
+        } while (op != 5);
     }
 
+    /**
+     * Menu de busqueda por tipo (DNI o ID)
+     */
     private void buscarPorTipo() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -104,6 +125,9 @@ public class Menu {
         } while (op != 3);
     }
 
+    /**
+     * Menu de gestion de cuentas
+     */
     private void gestionarCuentas() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -137,6 +161,9 @@ public class Menu {
         } while (op != 4);
     }
 
+    /**
+     * Menu de operaciones financieras
+     */
     private void operacionesFinancieras() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -156,14 +183,14 @@ public class Menu {
                     String ibanIng = sc.nextLine();
                     System.out.print("Cantidad a ingresar: ");
                     String cantidadIng = sc.nextLine();
-                    //menuOperaciones.ingresar(ibanIng, cantidadIng);
+                    menuOperaciones.ingresar(ibanIng, cantidadIng);
                     break;
                 case 2:
                     System.out.print("IBAN de retiro: ");
                     String ibanRet = sc.nextLine();
                     System.out.print("Cantidad a retirar: ");
                     String cantidadRet = sc.nextLine();
-                    //menuOperaciones.retirar(ibanRet, cantidadRet);
+                    menuOperaciones.retirar(ibanRet, cantidadRet);
                     break;
                 case 3:
                     System.out.print("IBAN de origen: ");
@@ -172,7 +199,7 @@ public class Menu {
                     String ibanDestino = sc.nextLine();
                     System.out.print("Cantidad a transferir: ");
                     String cantidadTransferencia = sc.nextLine();
-                    //menuOperaciones.realizarTransferencia(ibanOrigen, ibanDestino, cantidadTransferencia);
+                    menuOperaciones.realizarTransferencia(ibanOrigen, ibanDestino, cantidadTransferencia);
                     break;
                 case 4: break;
                 default: System.out.println("Opción incorrecta."); break;
@@ -180,6 +207,9 @@ public class Menu {
         } while (op != 4);
     }
 
+    /**
+     * Menu de consultas
+     */
     private void consultas() {
         Scanner sc = new Scanner(System.in);
         int op;
@@ -197,12 +227,12 @@ public class Menu {
                 case 1:
                     System.out.print("Introduzca IBAN: ");
                     String ibanSaldo = sc.nextLine();
-                    //menuConsultas.consultarSaldo(ibanSaldo);
+                    menuConsultas.consultarSaldo(ibanSaldo);
                     break;
                 case 2:
                     System.out.print("Introduzca IBAN: ");
                     String ibanMov = sc.nextLine();
-                    //menuConsultas.consultarMovimientos(ibanMov);
+                    menuConsultas.consultarMovimientos(ibanMov);
                     break;
                 case 3:
                     System.out.print("Introduzca IBAN: ");
@@ -216,7 +246,7 @@ public class Menu {
                         DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                         LocalDate fechaInicio = LocalDate.parse(fechaInicioStr, formato);
                         LocalDate fechaFin = LocalDate.parse(fechaFinStr, formato);
-                        //menuConsultas.consultarMovimientosPorFecha(ibanFecha, fechaInicio, fechaFin);
+                        menuConsultas.consultarMovimientosPorFecha(ibanFecha, fechaInicio, fechaFin);
                     } catch (Exception e) {
                         System.out.println("Error: El formato de las fechas no es correcto.");
                     }
