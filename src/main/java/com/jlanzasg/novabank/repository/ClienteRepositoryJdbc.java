@@ -123,7 +123,8 @@ public class ClienteRepositoryJdbc implements ClienteRepository {
                 .apellido(rs.getString("apellidos"))
                 .dni(rs.getString("dni"))
                 .email(rs.getString("email"))
-                .telefono(rs.getString("telefono")).build();
+                .telefono(rs.getString("telefono"))
+                .build();
 
         cliente.setId(rs.getLong("id"));
 
