@@ -65,7 +65,10 @@ public class CuentaRepositoryImpl implements CuentaRepository {
 
     @Override
     public Optional<Cuenta> buscarPorId(Long id) {
-        String sql = ("SELECT * FROM cuentas WHERE cliente_id = ?");
+        String sql = "SELECT cu.*, cl.nombre, cl.apellidos " +
+                "FROM cuentas cu " +
+                "INNER JOIN clientes cl ON cu.cliente_id = cl.id " +
+                "WHERE cu.id = ?";
 
         try (Connection conexion = DatabaseConnectionManager.getConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
@@ -115,7 +118,7 @@ public class CuentaRepositoryImpl implements CuentaRepository {
             stmt.setDouble(1, nuevoSaldo);
             stmt.setLong(2, cuentaId);
             stmt.executeUpdate();
-            return buscarPorNumero(cuentaId.toString()).get();
+            return buscarPorId(cuentaId).orElse(null);
         } catch (SQLException e) {
             throw new RuntimeException("No se ha podido actualizar el saldo de la cuenta", e);
         }
@@ -161,8 +164,7 @@ public class CuentaRepositoryImpl implements CuentaRepository {
             stmt.setLong(2, cuentaId);
             stmt.executeUpdate();
 
-            // Ojo: usamos el buscar transaccional para no romper el hilo
-            return buscarPorId(cuentaId).orElse(null);
+            return null;
         } catch (SQLException e) {
             throw new RuntimeException("Error al actualizar saldo en transacción", e);
         }
