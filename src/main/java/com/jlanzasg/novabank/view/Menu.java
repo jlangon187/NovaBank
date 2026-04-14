@@ -120,16 +120,16 @@ public class Menu {
             switch (op) {
                 case 1:
                     String id = String.valueOf(leerOpcion(sc, "Introduzca el ID del cliente: "));
-                    //menuCuentas.crearCuenta(id); // Actualizaremos este menú más adelante
+                    menuCuentas.crearCuenta(id); // Actualizaremos este menú más adelante
                     break;
                 case 2:
                     String idCliente = String.valueOf(leerOpcion(sc, "Introduzca el ID del cliente: "));
-                    //menuCuentas.listarCuentas(idCliente);
+                    menuCuentas.listarCuentas(idCliente);
                     break;
                 case 3:
                     System.out.print("Introduzca IBAN: ");
                     String iban = sc.nextLine();
-                    //menuCuentas.verCuenta(iban);
+                    menuCuentas.verCuenta(iban);
                     break;
                 case 4: break;
                 default: System.out.println("Opción incorrecta."); break;
