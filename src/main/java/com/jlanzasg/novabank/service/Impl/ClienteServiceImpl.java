@@ -1,7 +1,8 @@
-package com.jlanzasg.novabank.service;
+package com.jlanzasg.novabank.service.Impl;
 
 import com.jlanzasg.novabank.model.Cliente;
 import com.jlanzasg.novabank.repository.ClienteRepository;
+import com.jlanzasg.novabank.service.ClienteService;
 import com.jlanzasg.novabank.utils.Validacion;
 
 import java.util.List;
