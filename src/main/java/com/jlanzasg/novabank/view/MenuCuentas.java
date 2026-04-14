@@ -1,66 +1,84 @@
 package com.jlanzasg.novabank.view;
 
+import com.jlanzasg.novabank.model.Cuenta;
+import com.jlanzasg.novabank.service.CuentaService;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
 public class MenuCuentas {
 
-    /*
-    // Método para crear una cuenta para un cliente
-    public void crearCuenta(Banco banco, String id) {
+    private final CuentaService service;
+
+    public MenuCuentas(CuentaService service) {
+        this.service = service;
+    }
+
+    public void crearCuenta(String idStr) {
         try {
-            if (banco.buscarClientePorId(Integer.parseInt(id)).isEmpty()) {
-                throw new RuntimeException("El cliente no existe");
+            Long idCliente = Long.parseLong(idStr);
+            Cuenta cuentaCreada = service.crearCuenta(idCliente);
+
+            System.out.println("\nLa cuenta se ha creado correctamente.");
+            System.out.println("IBAN asignado: " + cuentaCreada.getIban());
+
+        } catch (NumberFormatException e) {
+            System.out.println("\nError: El ID debe ser un número entero.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("\nError de validación: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("\nError crítico del sistema: " + e.getMessage());
+        }
+    }
+
+    public void listarCuentas(String idClienteStr) {
+        try {
+            Long idCliente = Long.parseLong(idClienteStr);
+            List<Cuenta> cuentas = service.consultarCuentasDeCliente(idCliente);
+
+            if (cuentas.isEmpty()) {
+                System.out.println("\nEl cliente no tiene cuentas registradas.");
+                return;
             }
-            Cliente cliente = banco.buscarClientePorId(Integer.parseInt(id)).iterator().next();
-            Cuenta cuenta = new Cuenta(cliente);
-            banco.registrarCuenta(cuenta);
-            System.out.println("La cuenta se ha creado correctamente");
-        } catch (RuntimeException e) {
-            throw new RuntimeException("No se ha podido crear la cuenta");
+
+            System.out.println("\n--- CUENTAS DEL CLIENTE ID: " + idCliente + " ---");
+            System.out.println("-------------------------------------------------------------");
+            System.out.printf("%-26s | %-12s%n", "Número de cuenta", "Saldo");
+            System.out.println("-------------------------------------------------------------");
+
+            for (Cuenta cuenta : cuentas) {
+                System.out.printf("%-26s | %12.2f €%n", cuenta.getIban(), cuenta.getBalance());
+            }
+
+        } catch (NumberFormatException e) {
+            System.out.println("\nError: El ID debe ser un número entero.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("\nError: " + e.getMessage());
         }
     }
 
-    // Método para listar las cuentas de un cliente
-    public void listarCuentas(Banco banco, String id) {
+    public void verCuenta(String iban) {
+        try {
+            Optional<Cuenta> cuentaOpt = service.consultarCuenta(iban);
 
-        int idCliente = Integer.parseInt(id);
-        var clientes = banco.buscarClientePorId(idCliente);
+            if (cuentaOpt.isEmpty()) {
+                System.out.println("\nLa cuenta con IBAN " + iban + " no existe.");
+                return;
+            }
 
-        if (clientes.isEmpty()) {
-            System.out.println("El cliente no existe");
-            return;
+            Cuenta cuenta = cuentaOpt.get();
+            DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+
+            System.out.println("\n--- DETALLES DE LA CUENTA ---");
+            System.out.println("Número de cuenta: " + cuenta.getIban());
+            System.out.println("ID Titular: " + cuenta.getCliente().getId());
+            System.out.println("Nombre Titular: " + cuenta.getCliente().getNombre() + " " + cuenta.getCliente().getApellido());
+            System.out.println("Saldo: " + cuenta.getBalance() + " €");
+            System.out.println("Fecha de creación: " + cuenta.getFecha().format(formatoFecha));
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("\nError: " + e.getMessage());
         }
-
-        Cliente cliente = clientes.iterator().next();
-
-        System.out.println("\nCuentas del cliente "
-                + cliente.getNombre() + " " + cliente.getApellido() + ":");
-
-        System.out.println("-------------------------------------------------------------");
-        System.out.printf("%-26s | %-12s%n", "Número de cuenta", "Saldo");
-        System.out.println("-------------------------------------------------------------");
-
-        banco.getCuentas().values().stream()
-                .filter(cuenta -> cuenta.getCliente().getId() == idCliente)
-                .forEach(cuenta ->
-                        System.out.printf("%-26s | %12.2f €%n",
-                                cuenta.getIban(),
-                                cuenta.getBalance()
-                        )
-                );
     }
-
-    public void verCuenta(Banco banco, String iban) {
-
-        if (!banco.getCuentas().containsKey(iban)) {
-            System.out.println("La cuenta no existe.");
-            return;
-        }
-
-        Cuenta cuenta = banco.getCuentas().get(iban);
-        DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-
-        System.out.println("\nNúmero de cuenta: " + cuenta.getIban());
-        System.out.println("Titular: " + cuenta.getCliente().getNombre() + " " + cuenta.getCliente().getApellido());
-        System.out.println("Saldo: " + cuenta.getBalance() + " €");
-        System.out.println("Fecha de creación: " + cuenta.getFecha().format(formatoFecha));
-    }*/
 }

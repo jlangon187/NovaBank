@@ -20,14 +20,6 @@ public interface CuentaRepository {
     Cuenta guardar(Cuenta cuenta);
 
     /**
-     * Buscar por id optional.
-     *
-     * @param id the id
-     * @return the optional
-     */
-    Optional<Cuenta> buscarPorId(Long id);
-
-    /**
      * Buscar por numero optional.
      *
      * @param numeroCuenta the numero cuenta
@@ -36,10 +28,15 @@ public interface CuentaRepository {
     Optional<Cuenta> buscarPorNumero(String numeroCuenta);
 
     /**
-     * Buscar por cliente id list.
-     *
-     * @param clienteId the cliente id
-     * @return the list
+     * Buscar por id optional.
+     * @param id
+     * @return
+     */
+    Optional<Cuenta> buscarPorId(Long id);
+
+    /**
+     * Listar cuentas por cliente list.
+     * @return
      */
     List<Cuenta> buscarPorClienteId(Long clienteId);
 
@@ -50,5 +47,11 @@ public interface CuentaRepository {
      * @param nuevoSaldo the nuevo saldo
      * @return the cuenta
      */
-    Cuenta actualizarSaldo(Long cuentaId, BigDecimal nuevoSaldo);
+    Cuenta actualizarSaldo(Long cuentaId, Double nuevoSaldo);
+
+    /**
+     * Obtener ultimo id.
+     * @return
+     */
+    Long obtenerUltimoId();
 }
