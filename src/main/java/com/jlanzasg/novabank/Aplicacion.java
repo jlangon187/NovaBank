@@ -1,30 +1,45 @@
 package com.jlanzasg.novabank;
 
+import com.jlanzasg.novabank.repository.ClienteRepository;
+import com.jlanzasg.novabank.repository.Impl.ClienteRepositoryImpl;
+import com.jlanzasg.novabank.repository.CuentaRepository;
+import com.jlanzasg.novabank.repository.Impl.CuentaRepositoryImpl;
+import com.jlanzasg.novabank.repository.MovimientoRepository;
+import com.jlanzasg.novabank.repository.Impl.MovimientoRepositoryImpl;
+
+import com.jlanzasg.novabank.service.ClienteService;
+import com.jlanzasg.novabank.service.Impl.ClienteServiceImpl;
+import com.jlanzasg.novabank.service.CuentaService;
+import com.jlanzasg.novabank.service.Impl.CuentaServiceImpl;
+import com.jlanzasg.novabank.service.OperacionService;
+import com.jlanzasg.novabank.service.Impl.OperacionServiceImpl;
+import com.jlanzasg.novabank.service.MovimientoService;
+import com.jlanzasg.novabank.service.Impl.MovimientoServiceImpl;
+
+import com.jlanzasg.novabank.view.*;
+
 public class Aplicacion {
     public static void main(String[] args) {
 
-        Banco banco = new Banco();
+        // REPOSITORIOS
+        ClienteRepository clienteRepo = new ClienteRepositoryImpl();
+        CuentaRepository cuentaRepo = new CuentaRepositoryImpl();
+        MovimientoRepository movimientoRepo = new MovimientoRepositoryImpl();
 
-        Cliente cliente = new Cliente("Javier", "Torres", "12345678Z", "javi@mail.com", 666123456);
-        CuentaBancaria cuentaBancaria = new CuentaBancaria(cliente);
-        banco.registrarCuenta(cuentaBancaria);
-        banco.registrarCliente(cliente);
+        // SERVICIOS
+        ClienteService clienteService = new ClienteServiceImpl(clienteRepo);
+        CuentaService cuentaService = new CuentaServiceImpl(cuentaRepo, clienteService);
+        OperacionService operacionService = new OperacionServiceImpl(cuentaRepo, movimientoRepo);
+        MovimientoService movimientoService = new MovimientoServiceImpl(movimientoRepo, cuentaRepo);
 
-        System.out.println(cliente.toString());
-        System.out.println(cuentaBancaria.toString());
+        // VISTAS
+        MenuCliente menuCliente = new MenuCliente(clienteService);
+        MenuCuentas menuCuentas = new MenuCuentas(cuentaService);
+        MenuOperaciones menuOperaciones = new MenuOperaciones(operacionService);
+        MenuConsultas menuConsultas = new MenuConsultas(cuentaService, movimientoService);
 
-        System.out.println(banco.getClientes().toString());
-        System.out.println(banco.getCuentas().toString());
-
-        cuentaBancaria.ingresar("ES91210000000000000001", TipoMovimiento.DEPOSITO.name(), 3000.0);
-        System.out.println(cuentaBancaria.getBalance());
-
-        System.out.println(cuentaBancaria.getMovimiento());
-
-
-        cuentaBancaria.retirar("ES91210000000000000001", TipoMovimiento.RETIRO.name(), 1500.0);
-        System.out.println(cuentaBancaria.getBalance());
-
-        System.out.println(cuentaBancaria.getMovimiento());
+        // MENU PRINCIPAL
+        Menu menuPrincipal = new Menu(menuCliente, menuCuentas, menuOperaciones, menuConsultas);
+        menuPrincipal.menuPrincipal();
     }
 }
