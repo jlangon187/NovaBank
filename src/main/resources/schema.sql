@@ -17,7 +17,7 @@ CREATE TABLE cuentas (
     cliente_id INT NOT NULL,
     saldo NUMERIC(15,2) NOT NULL DEFAULT 0.00,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    CONSTRAINT fk_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
     CONSTRAINT chk_saldo_positivo CHECK (saldo >= 0)
 );
 
@@ -27,7 +27,7 @@ CREATE TABLE movimientos (
     tipo VARCHAR(50) NOT NULL,
     cantidad NUMERIC(15,2) NOT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_cuenta FOREIGN KEY (cuenta_id) REFERENCES cuentas(id),
+    CONSTRAINT fk_cuenta FOREIGN KEY (cuenta_id) REFERENCES cuentas(id) ON DELETE CASCADE,
     CONSTRAINT chk_tipo_movimiento CHECK (tipo IN ('DEPOSITO', 'RETIRO', 'TRANSFERENCIA_SALIENTE', 'TRANSFERENCIA_ENTRANTE')),
     CONSTRAINT chk_cantidad_positiva CHECK (cantidad > 0)
 );
