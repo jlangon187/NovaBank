@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message("Ocurrió un error inesperado en el servidor")
+                .message("Ocurrió un error inesperado en el servidor" +  ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
 
