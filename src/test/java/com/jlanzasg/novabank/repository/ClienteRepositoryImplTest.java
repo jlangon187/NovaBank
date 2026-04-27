@@ -1,6 +1,5 @@
 package com.jlanzasg.novabank.repository;
 
-import com.jlanzasg.novabank.config.DatabaseConnectionManager;
 import com.jlanzasg.novabank.model.Cliente;
 import com.jlanzasg.novabank.repository.Impl.ClienteRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
