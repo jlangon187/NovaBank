@@ -1,8 +1,6 @@
 package com.jlanzasg.novabank.service;
 
 import com.jlanzasg.novabank.model.Cliente;
-import com.jlanzasg.novabank.model.Cuenta;
-import com.jlanzasg.novabank.repository.CuentaRepository;
 import com.jlanzasg.novabank.service.Impl.CuentaServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
