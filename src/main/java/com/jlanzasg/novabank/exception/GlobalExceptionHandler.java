@@ -1,6 +1,6 @@
 package com.jlanzasg.novabank.exception;
 
-import com.jlanzasg.novabank.NovaBankV3.dto.error.ErrorResponseDTO;
+import com.jlanzasg.novabank.dto.error.ErrorResponseDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
