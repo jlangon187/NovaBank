@@ -1,8 +1,5 @@
 package com.jlanzasg.novabank.service;
 
-import com.jlanzasg.novabank.config.DatabaseConnectionManager;
-import com.jlanzasg.novabank.model.Cuenta;
-import com.jlanzasg.novabank.repository.CuentaRepository;
 import com.jlanzasg.novabank.repository.MovimientoRepository;
 import com.jlanzasg.novabank.service.Impl.OperacionServiceImpl;
 import org.junit.jupiter.api.Test;
