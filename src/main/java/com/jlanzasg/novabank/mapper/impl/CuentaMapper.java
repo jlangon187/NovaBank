@@ -7,6 +7,7 @@ import com.jlanzasg.novabank.model.Cuenta;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * The type Cuenta mapper.
@@ -37,7 +38,9 @@ public class CuentaMapper implements IMapper<Cuenta, CuentaRequestDTO, CuentaRes
     }
 
     @Override
-    public List<CuentaResponseDTO> toResponseDTOList(List<Cuenta> entites) {
-        return IMapper.super.toResponseDTOList(entites);
+    public Set<CuentaResponseDTO> toResponseDTOList(Set<Cuenta> entites) {
+        return entites.stream()
+                .map(this::toResponseDTO)
+                .collect(java.util.stream.Collectors.toSet());
     }
 }

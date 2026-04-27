@@ -22,6 +22,10 @@ public class GlobalExceptionHandler {
     /**
      * Maneja la excepción cuando se intenta duplicar un registro (DNI ya existe).
      * Devuelve un estado 409 CONFLICT.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(DuplicateException.class)
     public ResponseEntity<ErrorResponseDTO> handleDuplicateException(DuplicateException ex, HttpServletRequest request) {
@@ -32,6 +36,26 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+
+    /**
+     * Handle saldo insuficiente exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(SaldoInsuficienteException.class)
+    public ResponseEntity<ErrorResponseDTO> handleSaldoInsuficienteException(SaldoInsuficienteException ex, HttpServletRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     /**
