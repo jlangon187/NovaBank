@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * The type Cuenta controller.
@@ -60,8 +61,8 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró un cliente con el ID proporcionado o el cliente no tiene cuentas asociadas")
     })
     @GetMapping("/cliente/{idCliente}")
-    public ResponseEntity<List<CuentaResponseDTO>> findByClienteId(@PathVariable Long idCliente) {
-        List<CuentaResponseDTO> cuentas = cuentaService.findAccountsByClientId(idCliente);
+    public ResponseEntity<Set<CuentaResponseDTO>> findByClienteId(@PathVariable Long idCliente) {
+        Set<CuentaResponseDTO> cuentas = cuentaService.findAccountsByClientId(idCliente);
         return ResponseEntity.ok(cuentas);
     }
 
