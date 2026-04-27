@@ -25,16 +25,14 @@ public class Movimiento {
         private Long id;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "cuenta_id")
+        @JoinColumn(name = "cuenta_id", nullable = false)
         private Cuenta cuenta;
 
-        @NotNull
         @Enumerated(EnumType.STRING)
-        @Column(name = "tipo")
+        @Column(name = "tipo", nullable = false)
         private TipoMovimiento tipo;
 
-        @NotNull
-        @Column(name = "cantidad")
+        @Column(name = "cantidad", nullable = false)
         private Double cantidad;
 
         @Builder.Default

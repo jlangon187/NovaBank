@@ -1,6 +1,5 @@
 package com.jlanzasg.novabank.model;
 
-
 /**
  * The enum Tipo movimiento.
  */
