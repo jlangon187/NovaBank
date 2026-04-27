@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * The type Cliente.
@@ -48,7 +48,7 @@ public class Cliente {
 
     @Builder.Default
     @OneToMany (mappedBy = "cliente", cascade = CascadeType.ALL,  orphanRemoval = true)
-    private List<Cuenta> cuentas = new ArrayList<>();
+    private Set<Cuenta> cuentas = new LinkedHashSet<>();
 
     /**
      * Add cuenta.
@@ -57,16 +57,6 @@ public class Cliente {
      */
     public void addCuenta(Cuenta cuenta) {
         cuentas.add(cuenta);
-        cuenta.setCliente(this);
-    }
-
-    /**
-     * Remove cuenta.
-     *
-     * @param cuenta the cuenta
-     */
-    public void removeCuenta(Cuenta cuenta) {
-        cuentas.remove(cuenta);
         cuenta.setCliente(this);
     }
 }

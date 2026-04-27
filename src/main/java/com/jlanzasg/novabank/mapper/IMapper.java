@@ -1,6 +1,6 @@
 package com.jlanzasg.novabank.mapper;
 
-import java.util.List;
+import java.util.Set;
 
 public interface IMapper<E, I, O> {
 
@@ -11,10 +11,10 @@ public interface IMapper<E, I, O> {
     O toResponseDTO(E entity);
 
     // Convierte una lista de Entities a una lista de DTOs
-    default List<O> toResponseDTOList(List<E> entites) {
+    default Set<O> toResponseDTOList(Set<E> entites) {
         if (entites == null) return null;
         return entites.stream()
                 .map(this::toResponseDTO)
-                .toList();
+                .collect(java.util.stream.Collectors.toSet());
     }
 }

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * The type Cuenta.
@@ -40,4 +43,18 @@ public class Cuenta {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "cuenta", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<Movimiento> movimientos = new LinkedHashSet<>();
+
+    /**
+     * Add movimiento.
+     *
+     * @param movimiento the movimiento
+     */
+    public void addMovimiento(Movimiento movimiento) {
+        movimientos.add(movimiento);
+        movimiento.setCuenta(this);
+    }
 }

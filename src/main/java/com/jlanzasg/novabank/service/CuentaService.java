@@ -10,7 +10,7 @@ import com.jlanzasg.novabank.repository.CuentaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * The type Cuenta service.
@@ -67,7 +67,7 @@ public class CuentaService {
      * @param idCliente the id cliente
      * @return the list
      */
-    public List<CuentaResponseDTO> findAccountsByClientId(Long idCliente) {
+    public Set<CuentaResponseDTO> findAccountsByClientId(Long idCliente) {
         Cliente cliente = clienteRepository.findById(idCliente)
                 .orElseThrow(() -> new NotFoundException("No se encontró el cliente con ID: " + idCliente));
         return cuentaMapper.toResponseDTOList(cliente.getCuentas());
