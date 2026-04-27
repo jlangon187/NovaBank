@@ -47,14 +47,4 @@ public class Cuenta {
     @Builder.Default
     @OneToMany(mappedBy = "cuenta", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<Movimiento> movimientos = new LinkedHashSet<>();
-
-    /**
-     * Add movimiento.
-     *
-     * @param movimiento the movimiento
-     */
-    public void addMovimiento(Movimiento movimiento) {
-        movimientos.add(movimiento);
-        movimiento.setCuenta(this);
-    }
 }
