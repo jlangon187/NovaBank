@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.controller;
 
 import com.jlanzasg.novabank.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.service.CuentaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -61,8 +62,8 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró un cliente con el ID proporcionado o el cliente no tiene cuentas asociadas")
     })
     @GetMapping("/cliente/{idCliente}")
-    public ResponseEntity<Set<CuentaResponseDTO>> findByClienteId(@PathVariable Long idCliente) {
-        Set<CuentaResponseDTO> cuentas = cuentaService.findAccountsByClientId(idCliente);
+    public ResponseEntity<Set<CuentaSimpleResponseDTO>> findByClienteId(@PathVariable Long idCliente) {
+        Set<CuentaSimpleResponseDTO> cuentas = cuentaService.findAccountsByClientId(idCliente);
         return ResponseEntity.ok(cuentas);
     }
 

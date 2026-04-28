@@ -30,4 +30,13 @@ public interface ConsultasRepository extends JpaRepository<Movimiento, Long> {
      * @return the list
      */
     List<Movimiento> findByCuentaIdAndFechaBetweenOrderByFechaDesc(Long cuentaId, LocalDateTime fechaInicio, LocalDateTime fechaFin);
+
+
+    /**
+     * Find saldo by cuenta iban string.
+     *
+     * @param iban the iban
+     * @return the string
+     */
+    String findSaldoByCuentaIban(String iban);
 }
