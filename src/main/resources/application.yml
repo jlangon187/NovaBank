@@ -1,6 +1,9 @@
 spring:
   application:
     name: NovaBank
+  jackson:
+    mapper:
+      sort-properties-alphabetically: false
 
   datasource:
     url: jdbc:postgresql://localhost:5432/novabank_db
@@ -8,16 +11,18 @@ spring:
     password: root
     driver-class-name: org.postgresql.Driver
 
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
       hibernate:
-        ddl-auto: validate
-        show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
+        format_sql: true
 
 server:
-port: 8080
+  port: 8080
+  servlet:
+    context-path: /api
 
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

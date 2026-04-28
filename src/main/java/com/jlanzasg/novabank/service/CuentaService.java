@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.service;
 
 import com.jlanzasg.novabank.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.exception.NotFoundException;
 import com.jlanzasg.novabank.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.model.Cliente;
@@ -67,10 +68,10 @@ public class CuentaService {
      * @param idCliente the id cliente
      * @return the list
      */
-    public Set<CuentaResponseDTO> findAccountsByClientId(Long idCliente) {
+    public Set<CuentaSimpleResponseDTO> findAccountsByClientId(Long idCliente) {
         Cliente cliente = clienteRepository.findById(idCliente)
                 .orElseThrow(() -> new NotFoundException("No se encontró el cliente con ID: " + idCliente));
-        return cuentaMapper.toResponseDTOList(cliente.getCuentas());
+        return cuentaMapper.toSimpleResponseDTOList(cliente.getCuentas());
     }
 
     /**
