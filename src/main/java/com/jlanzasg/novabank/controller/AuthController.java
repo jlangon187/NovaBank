@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * The type Auth controller.
+ */
 @Tag(name = "Autenticación", description = "Endpoints para iniciar sesión y generar usuarios de prueba")
 @RestController
 @RequestMapping("/auth")
@@ -26,6 +29,14 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Instantiates a new Auth controller.
+     *
+     * @param authenticationManager the authentication manager
+     * @param jwtService            the jwt service
+     * @param usuarioRepository     the usuario repository
+     * @param passwordEncoder       the password encoder
+     */
     public AuthController(AuthenticationManager authenticationManager, JwtService jwtService, UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -33,6 +44,12 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Login response entity.
+     *
+     * @param request the request
+     * @return the response entity
+     */
     @Operation(summary = "Iniciar sesión", description = "Recibe email y contraseña, y devuelve un token JWT" +
             " si las credenciales son correctas.")
     @ApiResponses(value = {
@@ -54,6 +71,12 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token", jwtToken));
     }
 
+    /**
+     * Registrar prueba response entity.
+     *
+     * @param request the request
+     * @return the response entity
+     */
     @Operation(summary = "Registrar usuario de prueba", description = "Crea un nuevo usuario con el email y contraseña" +
             " proporcionados. La contraseña se encripta automáticamente.")
     @ApiResponses(value = {

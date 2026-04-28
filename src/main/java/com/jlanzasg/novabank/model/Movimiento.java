@@ -1,7 +1,6 @@
 package com.jlanzasg.novabank.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,6 +35,6 @@ public class Movimiento {
         private Double cantidad;
 
         @Builder.Default
-        @Column(name = "fecha", insertable = false, updatable = false)
+        @Column(name = "fecha", nullable = false)
         private LocalDateTime fecha = LocalDateTime.now();
 }
