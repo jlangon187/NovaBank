@@ -1,5 +1,7 @@
 package com.jlanzasg.novabank.controller;
 
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.service.ConsultaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,5 +70,22 @@ public class ConsultasController {
 
         List<MovimientoResponseDTO> movimientos = consultaService.obtenerMovimientosPorCuentaYFecha(id, inicio, fin);
         return ResponseEntity.ok(movimientos);
+    }
+
+    /**
+     * Obtener saldo.
+     * @param iban
+     * @return
+     */
+    @Operation(summary = "Obtener el saldo de una cuenta", description = "Permite obtener el saldo de una cuenta a traves" +
+            " del IBAN")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Saldo obtenido exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @GetMapping("/saldo/{iban}")
+    public ResponseEntity<CuentaSaldoResponseDTO> obtenerSaldo(@PathVariable String iban) {
+        CuentaSaldoResponseDTO cuenta = consultaService.consultarSaldo(iban);
+        return ResponseEntity.ok(cuenta);
     }
 }
