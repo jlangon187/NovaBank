@@ -77,7 +77,7 @@ class OperacionControllerTest {
         mockMvc.perform(post("/operaciones/retiro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest()); // Assuming GlobalExceptionHandler maps this to 400
+                .andExpect(status().isConflict());
     }
 
     @Test
