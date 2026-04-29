@@ -31,3 +31,14 @@ CREATE TABLE movimientos (
     CONSTRAINT chk_tipo_movimiento CHECK (tipo IN ('DEPOSITO', 'RETIRO', 'TRANSFERENCIA_SALIENTE', 'TRANSFERENCIA_ENTRANTE')),
     CONSTRAINT chk_cantidad_positiva CHECK (cantidad > 0)
 );
+
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    email    VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+--   Usuario de prueba
+--  "email": "admin@admin.com",
+--  "password": "admin1234"
+--

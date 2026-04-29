@@ -1,35 +1,106 @@
 package com.jlanzasg.novabank.service;
 
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.dto.cuenta.response.CuentaSimpleResponseDTO;
+import com.jlanzasg.novabank.exception.NotFoundException;
+import com.jlanzasg.novabank.mapper.impl.CuentaMapper;
+import com.jlanzasg.novabank.model.Cliente;
 import com.jlanzasg.novabank.model.Cuenta;
+import com.jlanzasg.novabank.repository.ClienteRepository;
+import com.jlanzasg.novabank.repository.CuentaRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 /**
- * The interface Cuenta service.
+ * The type Cuenta service.
  */
-public interface CuentaService {
-    /**
-     * Crear cuenta.
-     *
-     * @param clienteId the cliente id
-     * @return the cuenta
-     */
-    Cuenta crearCuenta(Long clienteId);
+@Service
+public class CuentaService {
+
+    private final CuentaRepository cuentaRepository;
+    private final ClienteRepository clienteRepository;
+    private final CuentaMapper cuentaMapper;
 
     /**
-     * Consultar cuentas de cliente list.
+     * Instantiates a new Cuenta service.
      *
-     * @param clienteId the cliente id
+     * @param cuentaRepository  the cuenta repository
+     * @param clienteRepository the cliente repository
+     * @param cuentaMapper      the cuenta mapper
+     */
+    public CuentaService(CuentaRepository cuentaRepository, ClienteRepository clienteRepository, CuentaMapper cuentaMapper) {
+        this.cuentaRepository = cuentaRepository;
+        this.clienteRepository = clienteRepository;
+        this.cuentaMapper = cuentaMapper;
+    }
+
+    /**
+     * Crear cuenta cuenta response dto.
+     *
+     * @param clienteId the request dto
+     * @return the cuenta response dto
+     */
+    @Transactional
+    public CuentaResponseDTO crearCuenta(Long clienteId) {
+
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new NotFoundException("No se encontró el cliente con ID: " + clienteId));
+
+        String nuevoIban = generarIban();
+
+        Cuenta nuevaCuenta = Cuenta.builder()
+                .iban(nuevoIban)
+                .balance(0.0) // El balance inicial se establece en 0.0
+                .build();
+
+        cliente.addCuenta(nuevaCuenta);
+
+        Cuenta cuentaGuardada = cuentaRepository.save(nuevaCuenta);
+
+        return cuentaMapper.toResponseDTO(cuentaGuardada);
+    }
+
+    /**
+     * Find accounts by client id list.
+     *
+     * @param idCliente the id cliente
      * @return the list
      */
-    List<Cuenta> consultarCuentasDeCliente(Long clienteId);
+    public Set<CuentaSimpleResponseDTO> findAccountsByClientId(Long idCliente) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new NotFoundException("No se encontró el cliente con ID: " + idCliente));
+        return cuentaMapper.toSimpleResponseDTOList(cliente.getCuentas());
+    }
 
     /**
-     * Consultar cuenta optional.
+     * Find account by iban cuenta response dto.
      *
      * @param iban the iban
-     * @return the optional
+     * @return the cuenta response dto
      */
-    Optional<Cuenta> consultarCuenta(String iban);
+    public CuentaResponseDTO findAccountByIban(String iban) {
+        Cuenta cuenta = cuentaRepository.findByIban(iban)
+                .orElseThrow(() -> new NotFoundException("No se encontró la cuenta con IBAN: " + iban));
+        return cuentaMapper.toResponseDTO(cuenta);
+    }
+
+    /**
+     * Generar iban string.
+     *
+     * @return the string
+     */
+    public String generarIban() {
+        Long ultimoID = cuentaRepository.obtenerUltimoId().orElse(0L);
+
+        StringBuilder sb = new StringBuilder();
+        String prefijo = "ES91210000";
+        String numeroSecuencial = String.format("%012d", ++ultimoID);
+        sb.append(prefijo);
+        sb.append(numeroSecuencial);
+
+        return sb.toString();
+    }
+
 }
