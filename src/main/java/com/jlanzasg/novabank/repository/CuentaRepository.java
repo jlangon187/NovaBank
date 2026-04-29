@@ -1,84 +1,46 @@
 package com.jlanzasg.novabank.repository;
 
 import com.jlanzasg.novabank.model.Cuenta;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.util.List;
 import java.util.Optional;
 
 /**
  * The interface Cuenta repository.
  */
-public interface CuentaRepository {
+@Repository
+public interface CuentaRepository extends JpaRepository<Cuenta, Long> {
 
     /**
-     * Guardar cuenta.
+     * Exists by iban boolean.
      *
-     * @param cuenta the cuenta
-     * @return the cuenta
+     * @param iban the iban
+     * @return the boolean
      */
-    Cuenta guardar(Cuenta cuenta);
+    boolean existsByIban(String iban);
 
     /**
-     * Buscar por numero optional.
+     * Find by iban optional.
      *
-     * @param numeroCuenta the numero cuenta
+     * @param iban the iban
      * @return the optional
      */
-    Optional<Cuenta> buscarPorNumero(String numeroCuenta);
+    Optional<Cuenta> findByIban(String iban);
 
     /**
-     * Buscar por id optional.
+     * Find by cliente id optional.
      *
-     * @param id the id
+     * @param idCliente the idCliente
      * @return the optional
      */
-    Optional<Cuenta> buscarPorId(Long id);
+    Optional<Cuenta> findByClienteId(Long idCliente);
 
     /**
-     * Listar cuentas por cliente list.
-     *
-     * @param clienteId the cliente id
-     * @return the list
+     * Query to obtain the last id optional.
+     * @return
      */
-    List<Cuenta> buscarPorClienteId(Long clienteId);
-
-    /**
-     * Actualizar saldo cuenta.
-     *
-     * @param cuentaId   the cuenta id
-     * @param nuevoSaldo the nuevo saldo
-     * @return the cuenta
-     */
-    Cuenta actualizarSaldo(Long cuentaId, Double nuevoSaldo);
-
-    /**
-     * Obtener ultimo id.
-     *
-     * @return the long
-     */
-    Long obtenerUltimoId();
-
-
-    // Métodos transaccionales
-
-    /**
-     * Buscar por numero optional.
-     *
-     * @param numeroCuenta the numero cuenta
-     * @param conn         the conn
-     * @return the optional
-     */
-    Optional<Cuenta> buscarPorNumero(String numeroCuenta, Connection conn);
-
-    /**
-     * Actualizar saldo cuenta.
-     *
-     * @param cuentaId   the cuenta id
-     * @param nuevoSaldo the nuevo saldo
-     * @param conn       the conn
-     * @return the cuenta
-     */
-    Cuenta actualizarSaldo(Long cuentaId, Double nuevoSaldo, Connection conn);
+    @Query("SELECT MAX(c.id) FROM Cuenta c")
+    Optional<Long> obtenerUltimoId();
 }
