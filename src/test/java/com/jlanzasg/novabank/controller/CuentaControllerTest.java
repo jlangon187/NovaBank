@@ -16,7 +16,7 @@ import java.util.Set;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import com.jlanzasg.novabank.security.SecurityConfig;
+import com.jlanzasg.novabank.config.SecurityConfig;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;

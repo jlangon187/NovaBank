@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.security;
+package com.jlanzasg.novabank.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
