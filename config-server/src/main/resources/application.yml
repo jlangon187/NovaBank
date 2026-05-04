@@ -1,13 +1,17 @@
 server:
-  port: 8888 # Puerto estándar mundial para Config Server
+  port: 8888
 
 spring:
   application:
     name: config-server
-  profiles:
-    active: native # Usamos el perfil "native" para leer los archivos de configuración desde el sistema de archivos local
   cloud:
     config:
       server:
-        native:
-          search-locations: classpath:/config/ # Ubicación de los archivos de configuración dentro del classpath
+        git:
+          uri: file:///C:/Users/Javil/Desktop/NovaBank/novabank-config-repo
+          default-label: config
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

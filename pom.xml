@@ -24,6 +24,8 @@
 		<module>novabank-monolito</module>
 		<module>eureka-server</module>
 		<module>config-server</module>
+		<module>cliente-service</module>
+		<module>cuenta-service</module>
 	</modules>
 
 	<dependencyManagement>
