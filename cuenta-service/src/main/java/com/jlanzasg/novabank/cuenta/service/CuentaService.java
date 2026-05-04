@@ -42,7 +42,8 @@ public class CuentaService {
     /**
      * Crear cuenta cuenta response dto.
      *
-     * @param clienteId the request dto
+     * @param clienteId        the request dto
+     * @param cuentaRequestDTO the cuenta request dto
      * @return the cuenta response dto
      */
     @Transactional
@@ -124,4 +125,18 @@ public class CuentaService {
         return sb.toString();
     }
 
+    /**
+     * Actualizar saldo.
+     *
+     * @param iban       the iban
+     * @param nuevoSaldo the nuevo saldo
+     */
+    @Transactional
+    public void actualizarSaldo(String iban, Double nuevoSaldo) {
+        Cuenta cuenta = cuentaRepository.findByIban(iban)
+                .orElseThrow(() -> new NotFoundException("La cuenta con IBAN " + iban + " no existe."));
+
+        cuenta.setBalance(nuevoSaldo);
+        cuentaRepository.save(cuenta);
+    }
 }

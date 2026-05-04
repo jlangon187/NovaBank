@@ -77,9 +77,27 @@ public class CuentaController {
             @ApiResponse(responseCode = "400", description = "Solicitud inválida, formato de IBAN incorrecto o IBAN faltante"),
             @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
     })
-    @GetMapping("/cliente/iban/{iban}")
+    @GetMapping("/iban/{iban}")
     public ResponseEntity<CuentaResponseDTO> findByIban(@PathVariable String iban) {
         CuentaResponseDTO cuenta = cuentaService.findAccountByIban(iban);
         return ResponseEntity.ok(cuenta);
+    }
+
+    /**
+     * Actualizar saldo response entity.
+     *
+     * @param iban       the iban
+     * @param nuevoSaldo the nuevo saldo
+     * @return the response entity
+     */
+    @Operation(summary = "Actualizar saldo de la cuenta", description = "Actualiza el saldo de una cuenta bancaria (Endpoint interno para microservicios)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Saldo actualizado con éxito"),
+            @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
+    })
+    @PutMapping("/iban/{iban}/saldo")
+    public ResponseEntity<Void> actualizarSaldo(@PathVariable String iban, @RequestParam Double nuevoSaldo) {
+        cuentaService.actualizarSaldo(iban, nuevoSaldo);
+        return ResponseEntity.ok().build();
     }
 }
