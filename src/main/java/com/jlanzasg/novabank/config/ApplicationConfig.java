@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.security;
+package com.jlanzasg.novabank.config;
 
 import com.jlanzasg.novabank.repository.UsuarioRepository;
 import org.springframework.context.annotation.Bean;
