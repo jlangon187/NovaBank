@@ -185,14 +185,29 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ServiceException.class)
-    public ResponseEntity<ErrorResponseDTO> handleFeignException(feign.FeignException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
+
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(ex.status())
-                .error("Feign Client Error")
-                .message("Error al comunicarse con el servicio externo: " + ex.getMessage())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Service Error")
+                .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.valueOf(ex.status()));
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(feign.FeignException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
+        feign.FeignException feignEx = (feign.FeignException) ex;
+
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(feignEx.status())
+                .error("Feign Client Error")
+                .message("Error de red: " + feignEx.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.valueOf(feignEx.status()));
     }
 }
