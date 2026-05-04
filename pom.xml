@@ -8,7 +8,8 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.6</version>
-		<relativePath/> </parent>
+		<relativePath/>
+	</parent>
 
 	<groupId>com.jlanzasg.novabank</groupId>
 	<artifactId>novabank-parent</artifactId>
@@ -27,6 +28,7 @@
 		<module>cliente-service</module>
 		<module>cuenta-service</module>
 		<module>operacion-service</module>
+		<module>api-gateway</module>
 	</modules>
 
 	<dependencyManagement>
