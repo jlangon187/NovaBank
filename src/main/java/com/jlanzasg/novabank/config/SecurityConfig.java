@@ -1,5 +1,8 @@
-package com.jlanzasg.novabank.security;
+package com.jlanzasg.novabank.config;
 
+import com.jlanzasg.novabank.security.CustomAccessDeniedHandler;
+import com.jlanzasg.novabank.security.CustomAuthenticationEntryPoint;
+import com.jlanzasg.novabank.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
