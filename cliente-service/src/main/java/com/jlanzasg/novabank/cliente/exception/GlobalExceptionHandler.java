@@ -184,4 +184,31 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
+
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Service Error")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(feign.FeignException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
+        feign.FeignException feignEx = (feign.FeignException) ex;
+
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(feignEx.status())
+                .error("Feign Client Error")
+                .message("Error de red: " + feignEx.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.valueOf(feignEx.status()));
+    }
 }
