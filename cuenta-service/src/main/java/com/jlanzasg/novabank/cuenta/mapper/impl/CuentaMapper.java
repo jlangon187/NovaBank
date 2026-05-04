@@ -49,6 +49,7 @@ public class CuentaMapper implements IMapper<Cuenta, CuentaRequestDTO, CuentaRes
 
         if (clienteDTO != null) {
             dto.setClienteName(clienteDTO.getNombre() + " " + clienteDTO.getApellidos() );
+            dto.setBalance(entity.getBalance());
         } else {
             dto.setClienteName("Nombre del cliente no disponible");
         }
