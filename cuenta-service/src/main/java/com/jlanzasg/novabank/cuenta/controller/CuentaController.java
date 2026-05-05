@@ -3,6 +3,7 @@ package com.jlanzasg.novabank.cuenta.controller;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.cuenta.service.CuentaService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,6 +17,12 @@ import java.util.Set;
  * The type Cuenta controller.
  */
 @Tag(name = "Cuentas", description = "Endpoints para gestionar cuentas en el sistema de NovaBank")
+@OpenAPIDefinition(
+        info = @io.swagger.v3.oas.annotations.info.Info(
+                title = "API NovaBank",
+                version = "1.0",
+                description = "API REST del sistema de NovaBank"
+        ))
 @RestController
 @RequestMapping("/cuentas")
 public class CuentaController {

@@ -13,7 +13,7 @@ public class ClienteMapper implements IMapper<Cliente, ClienteRequestDTO, Client
     public Cliente toEntity(ClienteRequestDTO dto) {
         if (dto == null) return null;
         return Cliente.builder()
-                .dni(dto.getDni())
+                .dni(dto.getDni().toUpperCase())
                 .nombre(dto.getNombre())
                 .apellidos(dto.getApellidos())
                 .email(dto.getEmail())
@@ -26,7 +26,7 @@ public class ClienteMapper implements IMapper<Cliente, ClienteRequestDTO, Client
         if (entity == null) return null;
         ClienteResponseDTO dto = new ClienteResponseDTO();
         dto.setId(entity.getId());
-        dto.setDni(entity.getDni());
+        dto.setDni(entity.getDni().toUpperCase());
         dto.setNombre(entity.getNombre());
         dto.setApellidos(entity.getApellidos());
         dto.setEmail(entity.getEmail());
