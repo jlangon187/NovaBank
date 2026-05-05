@@ -1,25 +1,30 @@
 package com.jlanzasg.novabank.cliente.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * The type Cliente.
  */
 @Getter
 @Setter
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString (exclude = "cuentas")
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table (name = "clientes")
 public class Cliente {
 
-    @Setter
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
@@ -40,7 +45,7 @@ public class Cliente {
     @Column (name = "telefono", unique = true, nullable = false)
     private String telefono;
 
-    @org.hibernate.annotations.CreationTimestamp
-    @Column(name = "fecha_creacion", updatable = false, columnDefinition = "TIMESTAMP DEFAULT NOW()")
+    @CreationTimestamp
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fecha;
 }

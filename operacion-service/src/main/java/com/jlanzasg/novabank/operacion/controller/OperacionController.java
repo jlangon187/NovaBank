@@ -5,6 +5,7 @@ import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDT
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.operacion.service.OperacionService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,6 +21,12 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Tag(name = "Operaciones", description = "Endpoints para gestionar operaciones en el sistema de NovaBank")
+@OpenAPIDefinition(
+        info = @io.swagger.v3.oas.annotations.info.Info(
+                title = "API NovaBank",
+                version = "1.0",
+                description = "API REST del sistema de NovaBank"
+        ))
 @RestController
 @RequestMapping("/operaciones")
 public class OperacionController {
