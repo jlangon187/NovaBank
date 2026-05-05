@@ -40,7 +40,7 @@ public class CuentaService {
     }
 
     /**
-     * Crear cuenta cuenta response dto.
+     * Crear Cuenta, response dto.
      *
      * @param clienteId        the request dto
      * @param cuentaRequestDTO the cuenta request dto
