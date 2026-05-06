@@ -8,7 +8,7 @@ spring:
     config:
       server:
         git:
-          uri: file:///C:/Users/Javil/Desktop/NovaBank/novabank-config-repo
+          uri: file:///C:/novabank-config-repo/
           default-label: config
 
 eureka:

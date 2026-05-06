@@ -76,7 +76,7 @@ public class ClienteService {
      * @return ClienteResponseDTO
      */
     public ClienteResponseDTO findByDni(String dni) {
-        Cliente clienteMapeado = clienteRepository.findByDni(dni).orElseThrow(() -> new NotFoundException("Cliente con DNI " + dni + " no encontrado"));
+        Cliente clienteMapeado = clienteRepository.findByDni(dni.toUpperCase()).orElseThrow(() -> new NotFoundException("Cliente con DNI " + dni.toUpperCase() + " no encontrado"));
         return clienteMapper.toResponseDTO(clienteMapeado);
     }
 

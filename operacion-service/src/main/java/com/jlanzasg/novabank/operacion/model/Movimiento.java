@@ -3,15 +3,19 @@ package com.jlanzasg.novabank.operacion.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * The type Movimiento.
  */
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,7 +37,7 @@ public class Movimiento {
         @Column(name = "cantidad", nullable = false)
         private Double cantidad;
 
-        @org.hibernate.annotations.CreationTimestamp
-        @Column(name = "fecha", updatable = false, columnDefinition = "TIMESTAMP DEFAULT NOW()")
-        private LocalDateTime fecha = LocalDateTime.now();
+        @CreationTimestamp
+        @Column(name = "fecha", updatable = false)
+        private LocalDateTime fecha;
 }
