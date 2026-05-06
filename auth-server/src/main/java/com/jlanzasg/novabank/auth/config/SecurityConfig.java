@@ -9,16 +9,31 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * The type Security config.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
 
+    /**
+     * Instantiates a new Security config.
+     *
+     * @param authenticationProvider the authentication provider
+     */
     public SecurityConfig(AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
     }
 
+    /**
+     * Security filter chain security filter chain.
+     *
+     * @param http the http
+     * @return the security filter chain
+     * @throws Exception the exception
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

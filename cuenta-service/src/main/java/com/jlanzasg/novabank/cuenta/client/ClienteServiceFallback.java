@@ -4,6 +4,9 @@ import com.jlanzasg.novabank.cuenta.dto.cliente.response.ClienteResponseDTO;
 import com.jlanzasg.novabank.cuenta.exception.ServiceException;
 import org.springframework.stereotype.Component;
 
+/**
+ * The type Cliente service fallback.
+ */
 @Component
 public class ClienteServiceFallback implements ClienteClient {
 
