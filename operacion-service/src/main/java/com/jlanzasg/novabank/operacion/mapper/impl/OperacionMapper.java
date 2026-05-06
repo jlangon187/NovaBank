@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+/**
+ * The type Operacion mapper.
+ */
 @Component
 public class OperacionMapper implements IMapper<Movimiento, OperacionRequestDTO, MovimientoResponseDTO> {
 

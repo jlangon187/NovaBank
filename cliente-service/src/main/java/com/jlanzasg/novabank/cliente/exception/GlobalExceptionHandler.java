@@ -6,8 +6,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
@@ -63,6 +65,10 @@ public class GlobalExceptionHandler {
     /**
      * Maneja la excepción cuando no se encuentra un registro.
      * Devuelve un estado 404 NOT FOUND.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleNotFoundException(NotFoundException ex, HttpServletRequest request) {
@@ -79,6 +85,10 @@ public class GlobalExceptionHandler {
      * Maneja cualquier otra excepción no controlada (El clásico 500).
      * Así evitamos que la aplicación devuelva todo el rastro de la pila (stack trace) al cliente,
      * manteniendo la API segura.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGlobalException(Exception ex, HttpServletRequest request) {
@@ -95,6 +105,10 @@ public class GlobalExceptionHandler {
     /**
      * Maneja errores de validación (@Valid).
      * Extrae los mensajes de error de los campos fallidos.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationException
@@ -115,11 +129,53 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle missing servlet request parameter exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle method argument type mismatch exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message("Parámetro inválido: " + ex.getName())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
      * Maneja la excepción cuando se accede a una URL que no existe (404).
      *
-     * @param ex
-     * @param request
-     * @return
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
@@ -136,9 +192,9 @@ public class GlobalExceptionHandler {
     /**
      * Maneja la excepción cuando se accede a un recurso estático que no existe (404).
      *
-     * @param ex
-     * @param request
-     * @return
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
@@ -154,9 +210,10 @@ public class GlobalExceptionHandler {
 
     /**
      * Maneja la excepción cuando el usuario no tiene permisos para acceder a un recurso (403).
-     * @param ex
-     * @param request
-     * @return
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
      */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ErrorResponseDTO> handleAccessDeniedException(
@@ -173,6 +230,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
+    /**
+     * Handle authentication exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
@@ -185,6 +249,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
+    /**
+     * Handle service exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
 
@@ -198,6 +269,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Handle feign exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
     @ExceptionHandler(feign.FeignException.class)
     public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
         feign.FeignException feignEx = (feign.FeignException) ex;
