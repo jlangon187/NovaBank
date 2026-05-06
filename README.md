@@ -154,7 +154,48 @@ Flujo JWT:
 3. El Gateway valida el token contra `auth-service /api/auth/validate`.
 4. Si es valido, enruta al microservicio destino; si no, responde `401`.
 
-## 6. Estrategia de resiliencia
+## 6. Endpoints por microservicio
+
+### auth-service (`/api/auth`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| `POST` | `/api/auth/login` | Autentica usuario y devuelve JWT |
+| `POST` | `/api/auth/register` | Registra usuario |
+| `GET` | `/api/auth/validate?token=...` | Valida token |
+
+### cliente-service (`/clientes`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| `POST` | `/clientes` | Crea cliente |
+| `GET` | `/clientes` | Lista clientes |
+| `GET` | `/clientes/{id}` | Busca cliente por ID |
+| `GET` | `/clientes/dni/{dni}` | Busca cliente por DNI |
+| `DELETE` | `/clientes/{id}` | Elimina cliente |
+
+### cuenta-service (`/cuentas`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| `POST` | `/cuentas?clienteId={id}` | Crea cuenta para cliente |
+| `GET` | `/cuentas/cliente/{idCliente}` | Lista cuentas por cliente |
+| `GET` | `/cuentas/iban/{iban}` | Obtiene cuenta por IBAN |
+| `PUT` | `/cuentas/iban/{iban}/saldo?nuevoSaldo={valor}` | Actualiza saldo (uso interno) |
+
+### operacion-service (`/operaciones`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| `POST` | `/operaciones/deposito` | Realiza deposito |
+| `POST` | `/operaciones/retiro` | Realiza retiro |
+| `POST` | `/operaciones/transferencia` | Realiza transferencia |
+| `GET` | `/operaciones/movimientos/{iban}` | Lista movimientos (admite `fechaInicio` y `fechaFin`) |
+| `GET` | `/operaciones/saldo/{iban}` | Consulta saldo |
+
+Nota: para consumo externo, la entrada recomendada es siempre `api-gateway`.
+
+## 7. Estrategia de resiliencia
 
 Configuracion actual (desde Config Server):
 
@@ -168,7 +209,15 @@ Evidencia esperada en la entrega:
 2. Respuesta de fallback con dependencia detenida.
 3. Recuperacion automatica tras reactivar la dependencia.
 
-## 7. Testing y cobertura actual
+## 8. Persistencia y control de concurrencia (`@Version`)
+
+La entidad `Cuenta` en `cuenta-service` incorpora bloqueo optimista con `@Version` sobre el campo `version`.
+
+- Evita la perdida silenciosa de actualizaciones cuando existen escrituras concurrentes sobre la misma cuenta.
+- Obliga a detectar conflictos de concurrencia a nivel de persistencia.
+- Es especialmente importante para proteger la integridad de operaciones sobre saldo.
+
+## 9. Testing y cobertura actual
 
 Tipos de pruebas implementadas:
 
@@ -191,7 +240,7 @@ Resultado validado:
 - `operacion-service`: 24 tests
 - Total: 68 tests (`BUILD SUCCESS`)
 
-## 8. Guia de ejecucion local
+## 10. Guia de ejecucion local
 
 Orden recomendado de arranque:
 
@@ -210,3 +259,7 @@ Notas:
 - El acceso externo debe realizarse por `api-gateway`.
 
 NovaBank Modulo 4 consolida una migracion realista hacia microservicios: separacion por contexto, infraestructura compartida, contratos entre servicios y resiliencia ante fallos parciales.
+
+Repositorio: https://github.com/jlangon187/NovaBank
+
+Autor: Javier Lanzas Gonzalez
