@@ -13,7 +13,6 @@ import java.util.Set;
 public class CuentaMapper {
 
     public CuentaResponseDTO toResponseDTO(CuentaResponseDTO cuentaDTO) {
-        if (cuentaDTO == null) return null;
         return cuentaDTO;
     }
 

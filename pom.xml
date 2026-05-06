@@ -22,13 +22,14 @@
 		<spring-cloud.version>2025.1.1</spring-cloud.version> </properties>
 
 	<modules>
-		<module>novabank-monolito</module>
+<!--		<module>novabank-monolito</module>-->
 		<module>eureka-server</module>
 		<module>config-server</module>
 		<module>cliente-service</module>
 		<module>cuenta-service</module>
 		<module>operacion-service</module>
 		<module>api-gateway</module>
+		<module>auth-server</module>
 	</modules>
 
 	<dependencyManagement>
