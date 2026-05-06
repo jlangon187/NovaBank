@@ -43,4 +43,7 @@ public class Cuenta {
 
     @Column(name = "cliente_id", nullable = false)
     private Long clienteId;
+
+    @Version
+    private Long version;
 }
