@@ -129,12 +129,12 @@ class CuentaControllerTest {
      * @throws Exception the exception
      */
     @Test
-    void findByIban_WhenServiceFails_ReturnsInternalServerErrorPayload() throws Exception {
+    void findByIban_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
         when(cuentaService.findAccountByIban("ES500")).thenThrow(new ServiceException("Dependencia no disponible"));
 
         mockMvc.perform(get("/cuentas/iban/ES500"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Service Error"))
-                .andExpect(jsonPath("$.status").value(500));
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Service Unavailable"))
+                .andExpect(jsonPath("$.status").value(503));
     }
 }

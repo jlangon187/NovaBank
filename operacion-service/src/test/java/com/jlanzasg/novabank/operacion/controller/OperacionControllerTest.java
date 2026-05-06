@@ -152,14 +152,14 @@ class OperacionControllerTest {
      * @throws Exception the exception
      */
     @Test
-    void deposito_WhenServiceFails_ReturnsInternalServerErrorPayload() throws Exception {
+    void deposito_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
         when(operacionService.depositar(any())).thenThrow(new ServiceException("Cuenta service no disponible"));
 
         mockMvc.perform(post("/operaciones/deposito")
                         .contentType(APPLICATION_JSON)
                         .content("{\"ibanCuenta\":\"ES91210000000000000001\",\"importe\":100.0}"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Service Error"))
-                .andExpect(jsonPath("$.status").value(500));
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Service Unavailable"))
+                .andExpect(jsonPath("$.status").value(503));
     }
 }
