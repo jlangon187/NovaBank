@@ -11,9 +11,11 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import com.jlanzasg.novabank.cuenta.client.ClienteServiceFallback;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -41,6 +43,7 @@ class ClienteClientContractTest {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
         registry.add("spring.cloud.openfeign.client.config.cliente-service.url", wm::baseUrl);
+        registry.add("spring.cloud.openfeign.circuitbreaker.enabled", () -> "false");
         registry.add("eureka.client.enabled", () -> "false");
         registry.add("spring.cloud.config.enabled", () -> "false");
     }
@@ -80,6 +83,7 @@ class ClienteClientContractTest {
     @SpringBootConfiguration
     @EnableAutoConfiguration
     @EnableFeignClients(clients = ClienteClient.class)
+    @Import(ClienteServiceFallback.class)
     static class TestApp {
     }
 }

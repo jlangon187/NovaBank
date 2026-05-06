@@ -5,6 +5,8 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -67,8 +69,21 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         }
                     })
                     .onErrorResume(e -> {
-                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                        return exchange.getResponse().setComplete(); // Token expirado o Auth Server caído
+                        if (e instanceof WebClientResponseException webClientResponseException) {
+                            HttpStatus authStatus = HttpStatus.resolve(webClientResponseException.getStatusCode().value());
+                            if (authStatus == HttpStatus.UNAUTHORIZED || authStatus == HttpStatus.FORBIDDEN) {
+                                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                                return exchange.getResponse().setComplete();
+                            }
+                        }
+
+                        if (e instanceof WebClientRequestException) {
+                            exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
+                            return exchange.getResponse().setComplete();
+                        }
+
+                        exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
+                        return exchange.getResponse().setComplete();
                     });
         };
     }

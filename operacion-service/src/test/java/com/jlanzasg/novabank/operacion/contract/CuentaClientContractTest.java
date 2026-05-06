@@ -41,6 +41,7 @@ class CuentaClientContractTest {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
         registry.add("spring.cloud.openfeign.client.config.cuenta-service.url", wm::baseUrl);
+        registry.add("spring.cloud.openfeign.circuitbreaker.enabled", () -> "false");
         registry.add("eureka.client.enabled", () -> "false");
         registry.add("spring.cloud.config.enabled", () -> "false");
     }
