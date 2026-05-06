@@ -7,16 +7,27 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * The type Authentication filter.
+ */
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
 
     private final WebClient.Builder webClientBuilder;
 
+    /**
+     * Instantiates a new Authentication filter.
+     *
+     * @param webClientBuilder the web client builder
+     */
     public AuthenticationFilter(WebClient.Builder webClientBuilder) {
         super(Config.class);
         this.webClientBuilder = webClientBuilder;
     }
 
+    /**
+     * The type Config.
+     */
     public static class Config {
         // Clase vacía necesaria para Spring Cloud Gateway
     }

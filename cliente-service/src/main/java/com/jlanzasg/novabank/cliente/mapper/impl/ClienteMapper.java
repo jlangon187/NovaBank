@@ -6,6 +6,9 @@ import com.jlanzasg.novabank.cliente.mapper.IMapper;
 import com.jlanzasg.novabank.cliente.model.Cliente;
 import org.springframework.stereotype.Component;
 
+/**
+ * The type Cliente mapper.
+ */
 @Component
 public class ClienteMapper implements IMapper<Cliente, ClienteRequestDTO, ClienteResponseDTO> {
 

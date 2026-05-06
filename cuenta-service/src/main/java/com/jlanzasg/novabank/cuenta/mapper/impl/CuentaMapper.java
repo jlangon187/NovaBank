@@ -42,6 +42,13 @@ public class CuentaMapper implements IMapper<Cuenta, CuentaRequestDTO, CuentaRes
         return dto;
     }
 
+    /**
+     * To response dto cuenta response dto.
+     *
+     * @param entity     the entity
+     * @param clienteDTO the cliente dto
+     * @return the cuenta response dto
+     */
     public CuentaResponseDTO toResponseDTO(Cuenta entity, ClienteResponseDTO clienteDTO) {
         if (entity == null) return null;
 
