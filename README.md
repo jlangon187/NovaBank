@@ -1,43 +1,43 @@
-# NovaBank - Plataforma de Microservicios (Modulo 4)
+# NovaBank - Plataforma de Microservicios (Módulo 4)
 
-NovaBank es un backend bancario migrado desde una arquitectura monolitica hacia una arquitectura de microservicios sincronos, con seguridad centralizada, descubrimiento de servicios y configuracion externalizada.
+NovaBank es un backend bancario migrado desde una arquitectura monolítica hacia una arquitectura de microservicios síncronos, con seguridad centralizada, descubrimiento de servicios y configuracion externalizada.
 
-## 1. Contexto de migracion
+## 1. Contexto de migración
 
 - Modulo 1: CLI + estructuras en memoria.
 - Modulo 2: CLI + JDBC + PostgreSQL.
 - Modulo 3: Monolito REST con Spring Boot.
 - Modulo 4 (actual): sistema distribuido con servicios independientes, API Gateway, Service Discovery y patrones de resiliencia.
 
-## 2. Topologia de servicios
+## 2. Topología de servicios
 
 | Servicio | Puerto | Rol | Responsabilidad | Propiedad de datos |
 |---|---:|---|---|---|
 | <img src="https://img.shields.io/badge/Service-Eureka_Server-00A1E0?style=flat-square&logo=spring&logoColor=white" alt="Eureka Server" /> | 8761 | Infraestructura | Registro y descubrimiento de servicios | N/A |
 | <img src="https://img.shields.io/badge/Service-Config_Server-4A5568?style=flat-square&logo=spring&logoColor=white" alt="Config Server" /> | 8888 | Infraestructura | Configuracion centralizada por entorno | N/A |
-| <img src="https://img.shields.io/badge/Service-API_Gateway-111827?style=flat-square&logo=spring&logoColor=white" alt="API Gateway" /> | 8080 | Infraestructura | Punto unico de entrada, enrutado y filtro JWT | N/A |
-| <img src="https://img.shields.io/badge/Service-Auth_Service-1F2937?style=flat-square&logo=springsecurity&logoColor=white" alt="Auth Service" /> | 8084 | Seguridad | Autenticacion, emision y validacion de token | `novabank_usuarios` |
-| <img src="https://img.shields.io/badge/Service-Cliente_Service-0EA5E9?style=flat-square&logo=springboot&logoColor=white" alt="Cliente Service" /> | 8081 | Negocio | Gestion del ciclo de vida de clientes | `novabank_clientes` |
-| <img src="https://img.shields.io/badge/Service-Cuenta_Service-22C55E?style=flat-square&logo=springboot&logoColor=white" alt="Cuenta Service" /> | 8082 | Negocio | Gestion de cuentas y saldo | `novabank_cuentas` |
-| <img src="https://img.shields.io/badge/Service-Operacion_Service-F59E0B?style=flat-square&logo=springboot&logoColor=white" alt="Operacion Service" /> | 8083 | Negocio | Depositos, retiros, transferencias y movimientos | `novabank_operaciones` |
+| <img src="https://img.shields.io/badge/Service-API_Gateway-111827?style=flat-square&logo=spring&logoColor=white" alt="API Gateway" /> | 8080 | Infraestructura | Punto único de entrada, enrutado y filtro JWT | N/A |
+| <img src="https://img.shields.io/badge/Service-Auth_Service-1F2937?style=flat-square&logo=springsecurity&logoColor=white" alt="Auth Service" /> | 8084 | Seguridad | Autenticación, emisión y validación de token | `novabank_usuarios` |
+| <img src="https://img.shields.io/badge/Service-Cliente_Service-0EA5E9?style=flat-square&logo=springboot&logoColor=white" alt="Cliente Service" /> | 8081 | Negocio | Gestión del ciclo de vida de clientes | `novabank_clientes` |
+| <img src="https://img.shields.io/badge/Service-Cuenta_Service-22C55E?style=flat-square&logo=springboot&logoColor=white" alt="Cuenta Service" /> | 8082 | Negocio | Gestión de cuentas y saldo | `novabank_cuentas` |
+| <img src="https://img.shields.io/badge/Service-Operacion_Service-F59E0B?style=flat-square&logo=springboot&logoColor=white" alt="Operacion Service" /> | 8083 | Negocio | Depósitos, retiros, transferencias y movimientos | `novabank_operaciones` |
 
-## 3. Stack tecnologico
+## 3. Stack tecnológico
 
-| Capa | Tecnologia + version | Notas |
+| Capa | Tecnología + version | Notas |
 |---|---|---|
 | Lenguaje | <img src="https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17" /> | Baseline del proyecto |
 | Framework core | <img src="https://img.shields.io/badge/Spring_Boot-4.0.6-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot 4.0.6" /> | Parent BOM |
 | Ecosistema cloud | <img src="https://img.shields.io/badge/Spring_Cloud-2025.1.1-0A66C2?style=flat-square&logo=spring&logoColor=white" alt="Spring Cloud 2025.1.1" /> | Discovery, Config, Gateway, OpenFeign |
-| Descubrimiento | <img src="https://img.shields.io/badge/Netflix_Eureka-via_Spring_Cloud-00A1E0?style=flat-square&logo=spring&logoColor=white" alt="Netflix Eureka" /> | Resolucion dinamica de endpoints |
+| Descubrimiento | <img src="https://img.shields.io/badge/Netflix_Eureka-via_Spring_Cloud-00A1E0?style=flat-square&logo=spring&logoColor=white" alt="Netflix Eureka" /> | Resolución dinámica de endpoints |
 | Configuracion centralizada | <img src="https://img.shields.io/badge/Config_Server-via_Spring_Cloud-4A5568?style=flat-square&logo=spring&logoColor=white" alt="Config Server" /> | Config remota desde Git |
-| Edge/API | <img src="https://img.shields.io/badge/Spring_Cloud_Gateway-via_Spring_Cloud-111827?style=flat-square&logo=spring&logoColor=white" alt="Spring Cloud Gateway" /> | Ruteo y filtro de autenticacion |
-| Comunicacion entre servicios | <img src="https://img.shields.io/badge/OpenFeign-via_Spring_Cloud-EF4444?style=flat-square&logo=openfeign&logoColor=white" alt="OpenFeign" /> | Clientes HTTP declarativos |
+| Edge/API | <img src="https://img.shields.io/badge/Spring_Cloud_Gateway-via_Spring_Cloud-111827?style=flat-square&logo=spring&logoColor=white" alt="Spring Cloud Gateway" /> | Ruteo y filtro de autenticación |
+| Comunicación entre servicios | <img src="https://img.shields.io/badge/OpenFeign-via_Spring_Cloud-EF4444?style=flat-square&logo=openfeign&logoColor=white" alt="OpenFeign" /> | Clientes HTTP declarativos |
 | Resiliencia | <img src="https://img.shields.io/badge/Resilience4j-CircuitBreaker_+_Retry-2B2D42?style=flat-square" alt="Resilience4j" /> | Tolerancia a fallos y reintentos |
 | Seguridad | <img src="https://img.shields.io/badge/Spring_Security_+_jjwt-jjwt_0.12.x-1F2937?style=flat-square&logo=springsecurity&logoColor=white" alt="Spring Security y jjwt" /> | JWT stateless |
 | Persistencia | <img src="https://img.shields.io/badge/Spring_Data_JPA_+_Hibernate-via_Spring_Boot-59666C?style=flat-square&logo=hibernate&logoColor=white" alt="JPA Hibernate" /> | Una BD por servicio |
 | Base de datos runtime | <img src="https://img.shields.io/badge/PostgreSQL-Production-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" /> | Aislamiento por contexto |
 | Base de datos testing | <img src="https://img.shields.io/badge/H2-Testing-003545?style=flat-square" alt="H2" /> | Pruebas en memoria |
-| Testing | <img src="https://img.shields.io/badge/JUnit5_+_Mockito_+_MockMvc_+_WireMock-Testing-25A162?style=flat-square&logo=junit5&logoColor=white" alt="Testing stack" /> | Unit, slice, integracion y contrato |
+| Testing | <img src="https://img.shields.io/badge/JUnit5_+_Mockito_+_MockMvc_+_WireMock-Testing-25A162?style=flat-square&logo=junit5&logoColor=white" alt="Testing stack" /> | Unit, slice, integración y contrato |
 
 ## 4. Diagramas de arquitectura
 
@@ -70,7 +70,7 @@ flowchart LR
     GIT[(Config Git Repo)] --> CFG
 ```
 
-### 4.2 Flujo de peticion autenticada
+### 4.2 Flujo de petición autenticada
 
 ```mermaid
 sequenceDiagram
@@ -90,7 +90,7 @@ sequenceDiagram
     G-->>C: 200 OK
 ```
 
-### 4.3 Dependencias entre servicios (sincrono)
+### 4.3 Dependencias entre servicios (síncrono)
 
 ```mermaid
 flowchart LR
@@ -152,13 +152,13 @@ Flujo JWT:
 1. El cliente obtiene token con `POST /api/auth/login`.
 2. El cliente envia `Authorization: Bearer <jwt>` al Gateway.
 3. El Gateway valida el token contra `auth-service /api/auth/validate`.
-4. Si es valido, enruta al microservicio destino; si no, responde `401`.
+4. Si es válido, enruta al microservicio destino; si no, responde `401`.
 
 ## 6. Endpoints por microservicio
 
 ### auth-service (`/api/auth`)
 
-| Metodo | Endpoint | Descripcion |
+| Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/api/auth/login` | Autentica usuario y devuelve JWT |
 | `POST` | `/api/auth/register` | Registra usuario |
@@ -166,7 +166,7 @@ Flujo JWT:
 
 ### cliente-service (`/clientes`)
 
-| Metodo | Endpoint | Descripcion |
+| Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/clientes` | Crea cliente |
 | `GET` | `/clientes` | Lista clientes |
@@ -176,7 +176,7 @@ Flujo JWT:
 
 ### cuenta-service (`/cuentas`)
 
-| Metodo | Endpoint | Descripcion |
+| Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/cuentas?clienteId={id}` | Crea cuenta para cliente |
 | `GET` | `/cuentas/cliente/{idCliente}` | Lista cuentas por cliente |
@@ -185,7 +185,7 @@ Flujo JWT:
 
 ### operacion-service (`/operaciones`)
 
-| Metodo | Endpoint | Descripcion |
+| Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/operaciones/deposito` | Realiza deposito |
 | `POST` | `/operaciones/retiro` | Realiza retiro |
@@ -201,13 +201,13 @@ Configuracion actual (desde Config Server):
 
 - `cuenta-service` protege llamadas a `cliente-service` con Circuit Breaker + Retry.
 - `operacion-service` protege llamadas a `cuenta-service` con Circuit Breaker + Retry.
-- Los Feign clients incorporan fallback para degradacion controlada.
+- Los Feign clients incorporan fallback para degradación controlada.
 
 Evidencia esperada en la entrega:
 
 1. Respuesta normal con dependencia activa.
 2. Respuesta de fallback con dependencia detenida.
-3. Recuperacion automatica tras reactivar la dependencia.
+3. Recuperación automática tras reactivar la dependencia.
 
 ## 8. Persistencia y control de concurrencia (`@Version`)
 
@@ -224,7 +224,7 @@ Tipos de pruebas implementadas:
 - Unitarias (servicios) con Mockito.
 - Repositorio con `@DataJpaTest` + H2.
 - Controlador con `@WebMvcTest` + MockMvc.
-- Integracion con `@SpringBootTest`.
+- Integración con `@SpringBootTest`.
 - Contrato Feign con WireMock.
 
 Comando usado en este entorno:
@@ -240,7 +240,7 @@ Resultado validado:
 - `operacion-service`: 24 tests
 - Total: 68 tests (`BUILD SUCCESS`)
 
-## 10. Guia de ejecucion local
+## 10. Guia de ejecución local
 
 Orden recomendado de arranque:
 
@@ -258,7 +258,7 @@ Notas:
 - Cada servicio consume configuracion remota y se registra en Eureka.
 - El acceso externo debe realizarse por `api-gateway`.
 
-NovaBank Modulo 4 consolida una migracion realista hacia microservicios: separacion por contexto, infraestructura compartida, contratos entre servicios y resiliencia ante fallos parciales.
+NovaBank Modulo 4 consolida una migración realista hacia microservicios: separación por contexto, infraestructura compartida, contratos entre servicios y resiliencia ante fallos parciales.
 
 Repositorio: https://github.com/jlangon187/NovaBank
 
