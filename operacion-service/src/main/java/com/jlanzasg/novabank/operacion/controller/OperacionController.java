@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * The type Operacion controller.
+ */
 @Tag(name = "Operaciones", description = "Endpoints para gestionar operaciones en el sistema de NovaBank")
 @OpenAPIDefinition(
         info = @io.swagger.v3.oas.annotations.info.Info(
@@ -33,10 +36,21 @@ public class OperacionController {
 
     private final OperacionService operacionService;
 
+    /**
+     * Instantiates a new Operacion controller.
+     *
+     * @param operacionService the operacion service
+     */
     public OperacionController(OperacionService operacionService) {
         this.operacionService = operacionService;
     }
 
+    /**
+     * Deposito response entity.
+     *
+     * @param operacionRequest the operacion request
+     * @return the response entity
+     */
     @Operation(summary = "Realizar un depósito en una cuenta", description = "Permite realizar un depósito en una cuenta bancaria" +
             " especificando el importe y la cuenta de destino")
     @ApiResponses(value = {
@@ -49,6 +63,12 @@ public class OperacionController {
         return ResponseEntity.ok(operacionService.depositar(operacionRequest));
     }
 
+    /**
+     * Retiro response entity.
+     *
+     * @param operacionRequest the operacion request
+     * @return the response entity
+     */
     @Operation(summary = "Realizar un retiro en una cuenta", description = "Permite realizar un retiro en una cuenta bancaria" +
             " especificando el importe y la cuenta de destino")
     @ApiResponses(value = {
@@ -61,6 +81,12 @@ public class OperacionController {
         return ResponseEntity.ok(operacionService.retirar(operacionRequest));
     }
 
+    /**
+     * Transferencia response entity.
+     *
+     * @param transferenciaRequest the transferencia request
+     * @return the response entity
+     */
     @Operation(summary = "Realizar una transferencia entre cuentas", description = "Permite realizar una transferencia" +
             " entre dos cuentas bancarias especificando el importe, la cuenta de origen y la cuenta de destino")
     @ApiResponses(value = {
@@ -77,7 +103,7 @@ public class OperacionController {
     /**
      * Obtener movimientos response entity.
      *
-     * @param iban         the iban
+     * @param iban        the iban
      * @param fechaInicio the fecha inicio
      * @param fechaFin    the fecha fin
      * @return the response entity
@@ -112,8 +138,9 @@ public class OperacionController {
 
     /**
      * Obtener saldo.
-     * @param iban
-     * @return
+     *
+     * @param iban the iban
+     * @return the response entity
      */
     @Operation(summary = "Obtener el saldo de una cuenta", description = "Permite obtener el saldo de una cuenta a traves" +
             " del IBAN")
