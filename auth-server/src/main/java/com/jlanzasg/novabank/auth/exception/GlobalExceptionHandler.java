@@ -215,13 +215,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
 
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Service Error")
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .error("Service Unavailable")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     /**
@@ -234,14 +234,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(feign.FeignException.class)
     public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
         feign.FeignException feignEx = (feign.FeignException) ex;
+        HttpStatus status = HttpStatus.resolve(feignEx.status());
+        if (status == null || feignEx.status() <= 0) {
+            status = HttpStatus.SERVICE_UNAVAILABLE;
+        }
 
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(feignEx.status())
-                .error("Feign Client Error")
+                .status(status.value())
+                .error(status == HttpStatus.SERVICE_UNAVAILABLE ? "Service Unavailable" : "Feign Client Error")
                 .message("Error de red: " + feignEx.getMessage())
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.valueOf(feignEx.status()));
+        return new ResponseEntity<>(errorResponse, status);
     }
 }

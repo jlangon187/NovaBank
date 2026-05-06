@@ -143,12 +143,12 @@ class ClienteControllerTest {
      * @throws Exception the exception
      */
     @Test
-    void findByDni_WhenServiceFails_ReturnsInternalServerErrorPayload() throws Exception {
+    void findByDni_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
         when(clienteService.findByDni("12345678A")).thenThrow(new ServiceException("Fallo de dependencia"));
 
         mockMvc.perform(get("/clientes/dni/12345678A"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Service Error"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Service Unavailable"))
                 .andExpect(jsonPath("$.path").value("/clientes/dni/12345678A"));
     }
 }
