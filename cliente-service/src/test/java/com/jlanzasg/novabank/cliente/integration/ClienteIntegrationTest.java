@@ -1,11 +1,14 @@
 package com.jlanzasg.novabank.cliente.integration;
 
+import com.jlanzasg.novabank.cliente.repository.ClienteRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,6 +27,14 @@ class ClienteIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @BeforeEach
+    void cleanDatabase() {
+        clienteRepository.deleteAll();
+    }
 
     /**
      * Create and read client full flow.
@@ -49,15 +60,18 @@ class ClienteIntegrationTest {
      */
     @Test
     void deleteClient_AfterCreate_ReturnsNoContentAndThenNotFound() throws Exception {
-        mockMvc.perform(post("/clientes")
+        MvcResult createResult = mockMvc.perform(post("/clientes")
                         .contentType(APPLICATION_JSON)
                         .content("{\"dni\":\"11223344X\",\"nombre\":\"Lucia\",\"apellidos\":\"Navas\",\"email\":\"lucia@test.com\",\"telefono\":\"622333444\"}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        mockMvc.perform(delete("/clientes/1"))
+        String createdId = com.jayway.jsonpath.JsonPath.read(createResult.getResponse().getContentAsString(), "$.id").toString();
+
+        mockMvc.perform(delete("/clientes/{id}", createdId))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/clientes/1"))
+        mockMvc.perform(get("/clientes/{id}", createdId))
                 .andExpect(status().isNotFound());
     }
 
