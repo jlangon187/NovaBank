@@ -1,0 +1,9 @@
+server:
+  port: 8761 # Puerto estándar mundial para Eureka
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: false # No necesito registrarme a mí mismo
+    fetch-registry: false # No necesito obtener el registro de otros servicios
