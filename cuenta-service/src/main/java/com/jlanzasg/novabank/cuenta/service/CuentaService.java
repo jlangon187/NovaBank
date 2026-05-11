@@ -1,20 +1,19 @@
 package com.jlanzasg.novabank.cuenta.service;
 
-import com.jlanzasg.novabank.cuenta.client.ClienteClient;
 import com.jlanzasg.novabank.cuenta.dto.cliente.response.ClienteResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
-import com.jlanzasg.novabank.cuenta.exception.ServiceException;
 import com.jlanzasg.novabank.cuenta.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.cuenta.model.Cuenta;
 import com.jlanzasg.novabank.cuenta.repository.CuentaRepository;
-import feign.FeignException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The type Cuenta service.
@@ -23,89 +22,68 @@ import java.util.Set;
 public class CuentaService {
 
     private final CuentaRepository cuentaRepository;
-    private final ClienteClient clienteClient;
+    private final WebClient webClient;
     private final CuentaMapper cuentaMapper;
+
 
     /**
      * Instantiates a new Cuenta service.
      *
      * @param cuentaRepository the cuenta repository
-     * @param clienteClient    the cliente client
+     * @param webClientBuilder the web client builder
      * @param cuentaMapper     the cuenta mapper
      */
-    public CuentaService(CuentaRepository cuentaRepository, ClienteClient clienteClient, CuentaMapper cuentaMapper) {
+    public CuentaService(CuentaRepository cuentaRepository, WebClient.Builder webClientBuilder, CuentaMapper cuentaMapper) {
         this.cuentaRepository = cuentaRepository;
-        this.clienteClient = clienteClient;
+        this.webClient = webClientBuilder.baseUrl("http://cliente-service").build();
         this.cuentaMapper = cuentaMapper;
     }
 
     /**
-     * Crear Cuenta, response dto.
+     * Crear cuenta mono.
      *
-     * @param clienteId        the request dto
+     * @param clienteId        the cliente id
      * @param cuentaRequestDTO the cuenta request dto
-     * @return the cuenta response dto
+     * @return the mono
      */
     @Transactional
-    public CuentaResponseDTO crearCuenta(Long clienteId, CuentaRequestDTO cuentaRequestDTO) {
+    public Mono<CuentaResponseDTO> crearCuenta(Long clienteId, CuentaRequestDTO cuentaRequestDTO) {
+        return obtenerCliente(clienteId)
+                .flatMap(clienteDTO -> generarIban()
+                        .flatMap(iban -> {
+                            Cuenta cuenta = cuentaMapper.toEntity(cuentaRequestDTO);
+                            cuenta.setClienteId(clienteId);
+                            cuenta.setIban(iban);
 
-        ClienteResponseDTO clienteDTO;
-
-        try {
-            clienteDTO = clienteClient.getClienteById(clienteId);
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("No se encontró el cliente con ID: " + clienteId);
-        }
-
-        String nuevoIban = generarIban();
-
-        Cuenta nuevaCuenta = Cuenta.builder()
-                .iban(nuevoIban)
-                .balance(0.0) // El balance inicial se establece en 0.0
-                .clienteId(clienteId)
-                .build();
-
-        Cuenta cuentaGuardada = cuentaRepository.save(nuevaCuenta);
-
-        return cuentaMapper.toResponseDTO(cuentaGuardada, clienteDTO);
+                            return cuentaRepository.save(cuenta)
+                                    .map(cuentaGuardada -> cuentaMapper.toResponseDTO(cuentaGuardada, clienteDTO));
+                        })
+                );
     }
 
     /**
-     * Find accounts by client id list.
+     * Find accounts by client id flux.
      *
-     * @param clienteId the id cliente
-     * @return the list
+     * @param clienteId the cliente id
+     * @return the flux
      */
-    public Set<CuentaSimpleResponseDTO> findAccountsByClientId(Long clienteId) {
-        try {
-            clienteClient.getClienteById(clienteId);
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("No se encontró el cliente con ID: " + clienteId);
-        }
-        return cuentaMapper.toSimpleResponseDTOList(cuentaRepository.findAllByClienteId(clienteId));
+    public Flux<CuentaSimpleResponseDTO> findAccountsByClientId(Long clienteId) {
+        return cuentaRepository.findAllByClienteId(clienteId)
+                .map(cuentaMapper::toSimpleResponseDTO);
     }
 
     /**
-     * Find account by iban cuenta response dto.
+     * Find account by iban mono.
      *
      * @param iban the iban
-     * @return the cuenta response dto
+     * @return the mono
      */
-    public CuentaResponseDTO findAccountByIban(String iban) {
-
-        Cuenta cuenta = cuentaRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException("No se encontró la cuenta con IBAN: " + iban));
-
-        ClienteResponseDTO clienteDTO;
-        try {
-            clienteDTO = clienteClient.getClienteById(cuenta.getClienteId());
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("No se encontró el cliente con ID: " + cuenta.getClienteId());
-        } catch (FeignException e) {
-            throw new ServiceException("El servicio de clientes falló al buscar el ID: " + cuenta.getClienteId());
-        }
-
-        return cuentaMapper.toResponseDTO(cuenta, clienteDTO);
+    public Mono<CuentaResponseDTO> findAccountByIban(String iban) {
+        return cuentaRepository.findByIban(iban)
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + iban)))
+                .flatMap(cuenta -> obtenerCliente(cuenta.getClienteId())
+                        .map(clienteDTO -> cuentaMapper.toResponseDTO(cuenta, clienteDTO))
+                );
     }
 
     /**
@@ -113,30 +91,39 @@ public class CuentaService {
      *
      * @return the string
      */
-    public String generarIban() {
-        Long ultimoID = cuentaRepository.obtenerUltimoId().orElse(0L);
-
-        StringBuilder sb = new StringBuilder();
-        String prefijo = "ES91210000";
-        String numeroSecuencial = String.format("%012d", ++ultimoID);
-        sb.append(prefijo);
-        sb.append(numeroSecuencial);
-
-        return sb.toString();
+    public Mono<String> generarIban() {
+        return cuentaRepository.obtenerUltimoId()
+                .defaultIfEmpty(0L)
+                .map(ultimo -> {
+                    String prefijo = "ES91210000";
+                    String numeroSecuencial = String.format("%012d", ultimo + 1);
+                    return prefijo + numeroSecuencial;
+                });
     }
 
     /**
-     * Actualizar saldo.
+     * Actualizar saldo mono.
      *
      * @param iban       the iban
      * @param nuevoSaldo the nuevo saldo
+     * @return the mono
      */
     @Transactional
-    public void actualizarSaldo(String iban, Double nuevoSaldo) {
-        Cuenta cuenta = cuentaRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException("La cuenta con IBAN " + iban + " no existe."));
+    public Mono<Void> actualizarSaldo(String iban, Double nuevoSaldo) {
+        return cuentaRepository.findByIban(iban)
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + iban)))
+                .flatMap(cuenta -> {
+                    cuenta.setBalance(nuevoSaldo);
+                    return cuentaRepository.save(cuenta).then();
+                });
+    }
 
-        cuenta.setBalance(nuevoSaldo);
-        cuentaRepository.save(cuenta);
+    private Mono<ClienteResponseDTO> obtenerCliente(Long clienteId) {
+        return webClient.get()
+                .uri("/clientes/{id}", clienteId)
+                .retrieve()
+                .bodyToMono(ClienteResponseDTO.class)
+                .onErrorResume(WebClientResponseException.NotFound.class,
+                        e -> Mono.error(new NotFoundException("No se encontró el cliente con ID: " + clienteId)));
     }
 }

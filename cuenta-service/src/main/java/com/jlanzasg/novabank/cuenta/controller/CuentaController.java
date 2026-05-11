@@ -1,5 +1,6 @@
 package com.jlanzasg.novabank.cuenta.controller;
 
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.cuenta.service.CuentaService;
@@ -8,8 +9,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
@@ -39,10 +43,10 @@ public class CuentaController {
     }
 
     /**
-     * Crear cuenta response entity.
+     * Crear cuenta mono.
      *
      * @param clienteId the cliente id
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Crear una nueva cuenta para un cliente", description = "Genera una nueva cuenta bancaria asociada a un cliente existente utilizando su ID")
     @ApiResponses(value = {
@@ -51,15 +55,16 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró un cliente con el ID proporcionado")
     })
     @PostMapping
-    public ResponseEntity<CuentaResponseDTO> crearCuenta(@RequestParam Long clienteId) {
-        return ResponseEntity.ok(cuentaService.crearCuenta(clienteId, null));
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<CuentaResponseDTO> crearCuenta(@RequestParam Long clienteId) {
+        return cuentaService.crearCuenta(clienteId, new CuentaRequestDTO());
     }
 
     /**
-     * Find by cliente id response entity.
+     * Find by cliente id flux.
      *
      * @param idCliente the id cliente
-     * @return the response entity
+     * @return the flux
      */
     @Operation(summary = "Obtener cuentas por ID de cliente", description = "Recupera una lista de cuentas bancarias asociadas a un cliente específico utilizando su ID")
     @ApiResponses(value = {
@@ -68,16 +73,16 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró un cliente con el ID proporcionado o el cliente no tiene cuentas asociadas")
     })
     @GetMapping("/cliente/{idCliente}")
-    public ResponseEntity<Set<CuentaSimpleResponseDTO>> findByClienteId(@PathVariable Long idCliente) {
-        Set<CuentaSimpleResponseDTO> cuentas = cuentaService.findAccountsByClientId(idCliente);
-        return ResponseEntity.ok(cuentas);
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<CuentaSimpleResponseDTO> findByClienteId(@PathVariable Long idCliente) {
+        return cuentaService.findAccountsByClientId(idCliente);
     }
 
     /**
-     * Find by iban response entity.
+     * Find by iban mono.
      *
      * @param iban the iban
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Obtener cuenta por IBAN", description = "Recupera los detalles de una cuenta bancaria utilizando su número IBAN único")
     @ApiResponses(value = {
@@ -86,17 +91,17 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
     })
     @GetMapping("/iban/{iban}")
-    public ResponseEntity<CuentaResponseDTO> findByIban(@PathVariable String iban) {
-        CuentaResponseDTO cuenta = cuentaService.findAccountByIban(iban);
-        return ResponseEntity.ok(cuenta);
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<CuentaResponseDTO> findByIban(@PathVariable String iban) {
+        return cuentaService.findAccountByIban(iban);
     }
 
     /**
-     * Actualizar saldo response entity.
+     * Actualizar saldo mono.
      *
      * @param iban       the iban
      * @param nuevoSaldo the nuevo saldo
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Actualizar saldo de la cuenta", description = "Actualiza el saldo de una cuenta bancaria (Endpoint interno para microservicios)")
     @ApiResponses(value = {
@@ -104,8 +109,8 @@ public class CuentaController {
             @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
     })
     @PutMapping("/iban/{iban}/saldo")
-    public ResponseEntity<Void> actualizarSaldo(@PathVariable String iban, @RequestParam Double nuevoSaldo) {
-        cuentaService.actualizarSaldo(iban, nuevoSaldo);
-        return ResponseEntity.ok().build();
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> actualizarSaldo(@PathVariable String iban, @RequestParam Double nuevoSaldo) {
+        return cuentaService.actualizarSaldo(iban, nuevoSaldo);
     }
 }
