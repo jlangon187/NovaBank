@@ -18,12 +18,6 @@ import reactor.core.publisher.Mono;
  * The type Cliente controller.
  */
 @Tag(name = "Clientes", description = "Endpoints para gestionar clientes en el sistema de NovaBank")
-@OpenAPIDefinition(
-        info = @io.swagger.v3.oas.annotations.info.Info(
-                title = "API NovaBank",
-                version = "1.0",
-                description = "API REST del sistema de NovaBank"
-        ))
 @RestController
 @RequestMapping("/clientes")
 public class ClienteController {
