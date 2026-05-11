@@ -109,7 +109,7 @@ erDiagram
       STRING apellidos
       STRING email UK
       STRING telefono UK
-      DATETIME fecha_creacion
+      DATETIME fecha
     }
 
     CUENTAS {
@@ -117,13 +117,13 @@ erDiagram
       STRING iban UK
       DOUBLE balance
       BIGINT cliente_id
-      DATETIME fecha_creacion
+      DATETIME fecha
       BIGINT version
     }
 
     MOVIMIENTOS {
       BIGINT id PK
-      STRING cuenta_iban
+      STRING cuentaIban
       STRING tipo
       DOUBLE cantidad
       DATETIME fecha

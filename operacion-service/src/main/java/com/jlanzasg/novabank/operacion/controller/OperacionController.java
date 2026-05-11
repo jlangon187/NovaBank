@@ -14,6 +14,8 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,10 +48,10 @@ public class OperacionController {
     }
 
     /**
-     * Deposito response entity.
+     * Deposito mono.
      *
      * @param operacionRequest the operacion request
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Realizar un depósito en una cuenta", description = "Permite realizar un depósito en una cuenta bancaria" +
             " especificando el importe y la cuenta de destino")
@@ -59,15 +61,15 @@ public class OperacionController {
             @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
     })
     @PostMapping("/deposito")
-    public ResponseEntity<MovimientoResponseDTO> deposito(@Valid @RequestBody OperacionRequestDTO operacionRequest) {
-        return ResponseEntity.ok(operacionService.depositar(operacionRequest));
+    public Mono<MovimientoResponseDTO> deposito(@Valid @RequestBody OperacionRequestDTO operacionRequest) {
+        return operacionService.depositar(operacionRequest);
     }
 
     /**
-     * Retiro response entity.
+     * Retiro mono.
      *
      * @param operacionRequest the operacion request
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Realizar un retiro en una cuenta", description = "Permite realizar un retiro en una cuenta bancaria" +
             " especificando el importe y la cuenta de destino")
@@ -77,15 +79,15 @@ public class OperacionController {
             @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado")
     })
     @PostMapping("/retiro")
-    public ResponseEntity<MovimientoResponseDTO> retiro(@Valid @RequestBody OperacionRequestDTO operacionRequest) {
-        return ResponseEntity.ok(operacionService.retirar(operacionRequest));
+    public Mono<MovimientoResponseDTO> retiro(@Valid @RequestBody OperacionRequestDTO operacionRequest) {
+        return operacionService.retirar(operacionRequest);
     }
 
     /**
-     * Transferencia response entity.
+     * Transferencia flux.
      *
      * @param transferenciaRequest the transferencia request
-     * @return the response entity
+     * @return the flux
      */
     @Operation(summary = "Realizar una transferencia entre cuentas", description = "Permite realizar una transferencia" +
             " entre dos cuentas bancarias especificando el importe, la cuenta de origen y la cuenta de destino")
@@ -96,17 +98,17 @@ public class OperacionController {
             @ApiResponse(responseCode = "409", description = "Conflicto, saldo insuficiente en la cuenta de origen para realizar la transferencia")
     })
     @PostMapping("/transferencia")
-    public ResponseEntity<List<MovimientoResponseDTO>> transferencia(@Valid @RequestBody TransferenciaRequestDTO transferenciaRequest) {
-        return ResponseEntity.ok(operacionService.transferir(transferenciaRequest));
+    public Flux<MovimientoResponseDTO> transferencia(@Valid @RequestBody TransferenciaRequestDTO transferenciaRequest) {
+        return operacionService.transferir(transferenciaRequest);
     }
 
     /**
-     * Obtener movimientos response entity.
+     * Obtener movimientos flux.
      *
      * @param iban        the iban
      * @param fechaInicio the fecha inicio
      * @param fechaFin    the fecha fin
-     * @return the response entity
+     * @return the flux
      */
     @Operation(summary = "Obtener movimientos de una cuenta", description = "Permite obtener los movimientos" +
             " de una cuenta específica, con la opción de filtrar por rango de fechas.")
@@ -116,7 +118,7 @@ public class OperacionController {
             @ApiResponse(responseCode = "400", description = "Parámetros de fecha inválidos")
     })
     @GetMapping("/movimientos/{iban}")
-    public ResponseEntity<List<MovimientoResponseDTO>> obtenerMovimientos(
+    public Flux<MovimientoResponseDTO> obtenerMovimientos(
             @PathVariable String iban,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
@@ -132,15 +134,14 @@ public class OperacionController {
             fin = fechaFin.atTime(LocalTime.MAX);
         }
 
-        List<MovimientoResponseDTO> movimientos = operacionService.obtenerMovimientosPorCuentaYFecha(iban, inicio, fin);
-        return ResponseEntity.ok(movimientos);
+        return operacionService.obtenerMovimientosPorCuentaYFecha(iban, inicio, fin);
     }
 
     /**
-     * Obtener saldo.
+     * Obtener saldo mono.
      *
      * @param iban the iban
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Obtener el saldo de una cuenta", description = "Permite obtener el saldo de una cuenta a traves" +
             " del IBAN")
@@ -149,8 +150,7 @@ public class OperacionController {
             @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
     })
     @GetMapping("/saldo/{iban}")
-    public ResponseEntity<CuentaSaldoResponseDTO> obtenerSaldo(@PathVariable String iban) {
-        CuentaSaldoResponseDTO cuenta = operacionService.consultarSaldo(iban);
-        return ResponseEntity.ok(cuenta);
+    public Mono<CuentaSaldoResponseDTO> obtenerSaldo(@PathVariable String iban) {
+        return operacionService.consultarSaldo(iban);
     }
 }
