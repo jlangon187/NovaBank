@@ -11,6 +11,8 @@ import lombok.Data;
 @Data
 public class TransferenciaRequestDTO {
 
+    private String moneda = "EUR";
+
     @NotNull(message = "El IBAN es obligatorio")
     @Pattern(regexp = "^ES\\d{20}$", message = "El IBAN debe tener un formato válido")
     private String cuentaOrigen;
