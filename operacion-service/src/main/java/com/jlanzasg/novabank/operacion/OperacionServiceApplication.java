@@ -3,14 +3,14 @@ package com.jlanzasg.novabank.operacion;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 
 /**
  * The type Operacion service application.
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients
+@EnableR2dbcAuditing
 public class OperacionServiceApplication {
     /**
      * The entry point of application.
