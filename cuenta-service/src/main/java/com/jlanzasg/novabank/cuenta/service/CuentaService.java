@@ -118,6 +118,12 @@ public class CuentaService {
                 });
     }
 
+    /**
+     * Obtener cliente mono.
+     *
+     * @param clienteId
+     * @return
+     */
     private Mono<ClienteResponseDTO> obtenerCliente(Long clienteId) {
         return webClient.get()
                 .uri("/clientes/{id}", clienteId)
@@ -125,5 +131,34 @@ public class CuentaService {
                 .bodyToMono(ClienteResponseDTO.class)
                 .onErrorResume(WebClientResponseException.NotFound.class,
                         e -> Mono.error(new NotFoundException("No se encontró el cliente con ID: " + clienteId)));
+    }
+
+    /**
+     * Actualizar saldos mono.
+     *
+     * @param ibanOrigen
+     * @param ibanDestino
+     * @param nuevoSaldoOrigen
+     * @param nuevoSaldoDestino
+     * @return
+     */
+    @Transactional
+    public Mono<Void> actualizarSaldos(String ibanOrigen, Double nuevoSaldoOrigen, String ibanDestino, Double nuevoSaldoDestino) {
+        Mono<Cuenta> cuentaOrigenMono = cuentaRepository.findByIban(ibanOrigen)
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + ibanOrigen)));
+        Mono<Cuenta> cuentaDestinoMono = cuentaRepository.findByIban(ibanDestino)
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + ibanDestino)));
+
+        return Mono.zip(cuentaOrigenMono, cuentaDestinoMono)
+                .flatMap(tuple -> {
+                    Cuenta cuentaOrigen = tuple.getT1();
+                    Cuenta cuentaDestino = tuple.getT2();
+
+                    cuentaOrigen.setBalance(cuentaOrigen.getBalance() - nuevoSaldoOrigen);
+                    cuentaDestino.setBalance(cuentaDestino.getBalance() + nuevoSaldoDestino);
+
+                    return cuentaRepository.save(cuentaOrigen)
+                            .then(cuentaRepository.save(cuentaDestino));
+                }).then();
     }
 }
