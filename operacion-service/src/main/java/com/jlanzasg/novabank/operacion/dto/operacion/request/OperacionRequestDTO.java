@@ -13,7 +13,7 @@ public class OperacionRequestDTO {
 
     @NotNull(message = "El IBAN es obligatorio")
     @Pattern(regexp = "^ES\\d{20}$", message = "El IBAN debe tener un formato válido")
-    private String ibanCuenta;
+    private String cuentaIban;
 
     @NotNull(message = "El importe es obligatorio")
     @DecimalMin(value = "0.01", message = "El importe debe ser mayor que cero")

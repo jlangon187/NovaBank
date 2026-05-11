@@ -131,9 +131,6 @@ public class CuentaController {
     @PutMapping("/saldos")
     @ResponseStatus(HttpStatus.OK)
     public Mono<Void> actualizarSaldo(@RequestBody ActualizarSaldosRequestDTO request) {
-        return cuentaService.actualizarSaldos(
-                request.getIbanOrigen(), request.getNuevoSaldoOrigen(),
-                request.getIbanDestino(), request.getNuevoSaldoDestino()
-        );
+        return cuentaService.actualizarSaldos(request);
     }
 }

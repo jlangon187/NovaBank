@@ -24,7 +24,7 @@ public class Movimiento {
 
         @Id
         private Long id;
-        private String cuentaIban;
+        private String iban;
         private TipoMovimiento tipo;
         private Double cantidad;
         @CreatedDate
