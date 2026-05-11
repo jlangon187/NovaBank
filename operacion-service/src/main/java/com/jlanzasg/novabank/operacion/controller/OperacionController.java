@@ -25,12 +25,6 @@ import java.time.LocalTime;
  * The type Operacion controller.
  */
 @Tag(name = "Operaciones", description = "Endpoints para gestionar operaciones en el sistema de NovaBank")
-@OpenAPIDefinition(
-        info = @io.swagger.v3.oas.annotations.info.Info(
-                title = "API NovaBank",
-                version = "1.0",
-                description = "API REST del sistema de NovaBank"
-        ))
 @RestController
 @RequestMapping("/operaciones")
 public class OperacionController {

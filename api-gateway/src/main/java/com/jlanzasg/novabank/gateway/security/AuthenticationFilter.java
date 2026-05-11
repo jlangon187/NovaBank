@@ -37,12 +37,15 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            // 1. Si es la ruta de login o registro, dejamos pasar directamente
-            if (exchange.getRequest().getURI().getPath().contains("/api/auth")) {
-                return chain.filter(exchange);
+            String path = exchange.getRequest().getURI().getPath();
+
+            boolean isAuthRoute = path.contains("/api/auth");
+            boolean isSwaggerRoute = path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/webjars");
+
+            if (isAuthRoute || isSwaggerRoute) {
+                return chain.filter(exchange); // Dejamos pasar sin pedir token
             }
 
-            // 2. Extraer la cabecera "Authorization" de forma segura
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             // Comprobar que existe y que es un Bearer token
