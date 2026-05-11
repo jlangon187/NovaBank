@@ -2,19 +2,18 @@ package com.jlanzasg.novabank.cliente.repository;
 
 
 import com.jlanzasg.novabank.cliente.model.Cliente;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The interface Cliente repository.
  */
 @Repository
-public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+public interface ClienteRepository extends ReactiveCrudRepository<Cliente, Long> {
 
     /**
      * Find by dni optional.
@@ -22,7 +21,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
      * @param dni the dni
      * @return the optional
      */
-    Optional<Cliente> findByDni(String dni);
+    Mono<Cliente> findByDni(String dni);
 
     /**
      * Hace 1 sola llamada a la BD.
@@ -35,13 +34,13 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
      * @return the list
      */
     @Query("SELECT CASE " +
-            "WHEN c.dni = :dni THEN 'DNI' " +
-            "WHEN c.email = :email THEN 'EMAIL' " +
-            "WHEN c.telefono = :telefono THEN 'TELEFONO' " +
+            "WHEN dni = :dni THEN 'DNI' " +
+            "WHEN email = :email THEN 'EMAIL' " +
+            "WHEN telefono = :telefono THEN 'TELEFONO' " +
             "ELSE 'UNKNOWN' END " +
-            "FROM Cliente c " +
-            "WHERE c.dni = :dni OR c.email = :email OR c.telefono = :telefono")
-    List<String> findConflictos(
+            "FROM clientes " +
+            "WHERE dni = :dni OR email = :email OR telefono = :telefono")
+    Flux<String> findConflictos(
             @Param("dni") String dni,
             @Param("email") String email,
             @Param("telefono") String telefono

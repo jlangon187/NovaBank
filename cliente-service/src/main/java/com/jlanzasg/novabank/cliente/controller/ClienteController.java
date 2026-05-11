@@ -10,10 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The type Cliente controller.
@@ -41,10 +40,10 @@ public class ClienteController {
     }
 
     /**
-     * Save cliente cliente response dto.
+     * Save cliente mono.
      *
      * @param clienteRequestDTO the cliente request dto
-     * @return the cliente response dto
+     * @return the mono
      */
     @Operation(summary = "Crear un nuevo cliente", description = "Agrega un nuevo cliente a la base de datos con los datos proporcionados")
     @ApiResponses(value = {
@@ -53,54 +52,57 @@ public class ClienteController {
             @ApiResponse(responseCode = "409", description = "Conflicto, el DNI, email o teléfono ya existe en la base de datos")
     })
     @PostMapping
-    public ResponseEntity<ClienteResponseDTO> saveCliente(@Valid @RequestBody ClienteRequestDTO clienteRequestDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(clienteService.save(clienteRequestDTO));
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ClienteResponseDTO> saveCliente(@Valid @RequestBody ClienteRequestDTO clienteRequestDTO) {
+        return clienteService.save(clienteRequestDTO);
     }
 
     /**
-     * Find by id cliente response dto.
+     * Find by id mono.
      *
      * @param id the id
-     * @return the cliente response dto
+     * @return the mono
      */
     @Operation(summary = "Buscar cliente por ID", description = "Recupera un cliente de la base de datos utilizando su ID único")
     @ApiResponse(responseCode = "200", description = "Cliente encontrado con éxito")
     @GetMapping("/{id}")
-    public ResponseEntity<ClienteResponseDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(clienteService.findById(id));
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<ClienteResponseDTO> findById(@PathVariable Long id) {
+        return clienteService.findById(id);
     }
 
     /**
-     * Find by dni cliente response dto.
+     * Find by dni mono.
      *
      * @param dni the dni
-     * @return the cliente response dto
+     * @return the mono
      */
     @Operation(summary = "Buscar cliente por DNI", description = "Busca un cliente en la base de datos utilizando su DNI único")
     @ApiResponse(responseCode = "200", description = "Cliente encontrado con éxito")
     @GetMapping("/dni/{dni}")
-    public ResponseEntity<ClienteResponseDTO> findByDni(@PathVariable String dni) {
-        return ResponseEntity.ok(clienteService.findByDni(dni));
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<ClienteResponseDTO> findByDni(@PathVariable String dni) {
+        return clienteService.findByDni(dni);
     }
 
     /**
-     * Listar clientes response entity.
+     * Listar clientes flux.
      *
-     * @return the response entity
+     * @return the flux
      */
     @Operation(summary = "Listar todos los clientes", description = "Retorna una lista de todos los clientes registrados")
     @ApiResponse(responseCode = "200", description = "Lista obtenida con éxito")
     @GetMapping
-    public ResponseEntity<List<ClienteResponseDTO>> listarClientes() {
-        List<ClienteResponseDTO> clientes = clienteService.findAll();
-        return ResponseEntity.ok(clientes);
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<ClienteResponseDTO> listarClientes() {
+        return clienteService.findAll();
     }
 
     /**
-     * Delete cliente response entity.
+     * Delete cliente mono.
      *
      * @param id the id
-     * @return the response entity
+     * @return the mono
      */
     @Operation(summary = "Eliminar un cliente", description = "Borra un cliente de la base de datos mediante su ID")
     @ApiResponses(value = {
@@ -108,8 +110,8 @@ public class ClienteController {
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCliente(@PathVariable Long id) {
-        clienteService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deleteCliente(@PathVariable Long id) {
+        return clienteService.deleteById(id);
     }
 }
