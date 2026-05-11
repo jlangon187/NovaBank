@@ -4,6 +4,7 @@ import com.jlanzasg.novabank.exchange.dto.ExchangeRateResponseDTO;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @RestController
@@ -13,7 +14,8 @@ public class ExchangeRateController {
     @GetMapping
     public Mono<ExchangeRateResponseDTO> obtenerTasaCambio(
             @RequestParam String from,
-            @RequestParam String to) {
+            @RequestParam String to,
+            @RequestParam(required = false, defaultValue = "false") boolean delay) {
 
         double tasaSimulada = ("EUR".equalsIgnoreCase(from) && "USD".equalsIgnoreCase(to)) ? 1.05 : 1.0;
 
@@ -24,6 +26,12 @@ public class ExchangeRateController {
                 LocalDateTime.now()
         );
 
-        return Mono.just(response);
+        Mono<ExchangeRateResponseDTO> respuestaReactiva = Mono.just(response);
+
+        if (delay) {
+            return respuestaReactiva.delayElement(Duration.ofSeconds(5));
+        }
+
+        return respuestaReactiva;
     }
 }

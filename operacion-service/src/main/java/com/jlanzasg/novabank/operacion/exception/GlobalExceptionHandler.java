@@ -1,15 +1,17 @@
 package com.jlanzasg.novabank.operacion.exception;
 
 import com.jlanzasg.novabank.operacion.dto.error.ErrorResponseDTO;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebInputException;
+import reactor.core.publisher.Mono;
 
 /**
  * Clase para manejar excepciones globalmente en la aplicación. Utiliza @RestControllerAdvice para interceptar excepciones
@@ -23,20 +25,19 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 public class GlobalExceptionHandler {
 
     /**
-     * Maneja la excepción cuando se intenta duplicar un registro (DNI ya existe).
-     * Devuelve un estado 409 CONFLICT.
+     * Handle duplicate exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
     @ExceptionHandler(DuplicateException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDuplicateException(DuplicateException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDTO> handleDuplicateException(DuplicateException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
@@ -50,183 +51,145 @@ public class GlobalExceptionHandler {
      * @return the response entity
      */
     @ExceptionHandler(SaldoInsuficienteException.class)
-    public ResponseEntity<ErrorResponseDTO> handleSaldoInsuficienteException(SaldoInsuficienteException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDTO> handleSaldoInsuficienteException(SaldoInsuficienteException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
     /**
-     * Maneja la excepción cuando no se encuentra un registro.
-     * Devuelve un estado 404 NOT FOUND.
+     * Handle not found exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNotFoundException(NotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDTO> handleNotFoundException(NotFoundException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     /**
-     * Maneja cualquier otra excepción no controlada (El clásico 500).
-     * Así evitamos que la aplicación devuelva todo el rastro de la pila (stack trace) al cliente,
-     * manteniendo la API segura.
+     * Handle validation exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGlobalException(Exception ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("Ocurrió un error inesperado en el servidor" +  ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Maneja errores de validación (@Valid).
-     * Extrae los mensajes de error de los campos fallidos.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDTO> handleValidationException
-    (org.springframework.web.bind.MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @ExceptionHandler(WebExchangeBindException.class)
+    public ResponseEntity<ErrorResponseDTO> handleValidationException(WebExchangeBindException ex, ServerHttpRequest request) {
         StringBuilder mensajes = new StringBuilder();
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            mensajes.append(error.getField()).append(": ").append(error.getDefaultMessage()).append(". ");
-        });
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                mensajes.append(error.getField()).append(": ").append(error.getDefaultMessage()).append(". ")
+        );
 
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(mensajes.toString().trim())
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
-
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-
     /**
-     * Handle missing servlet request parameter exception response entity.
+     * Handle server web input exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponseDTO> handleMissingServletRequestParameterException(
-            MissingServletRequestParameterException ex,
-            HttpServletRequest request) {
+    @ExceptionHandler(ServerWebInputException.class)
+    public ResponseEntity<ErrorResponseDTO> handleServerWebInputException(ServerWebInputException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
+                .message("Error en la solicitud: " + ex.getReason())
+                .path(request.getPath().value())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle response status exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponseDTO> handleResponseStatusException(ResponseStatusException ex, ServerHttpRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(ex.getStatusCode().value())
+                .error(ex.getStatusCode().toString())
+                .message(ex.getReason() != null ? ex.getReason() : "Error en la petición")
+                .path(request.getPath().value())
+                .build();
+        return new ResponseEntity<>(errorResponse, ex.getStatusCode());
+    }
+
+    /**
+     * Handle web client exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(WebClientResponseException.class)
+    public ResponseEntity<ErrorResponseDTO> handleWebClientException(WebClientResponseException ex, ServerHttpRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(ex.getStatusCode().value())
+                .error("WebClient Error")
+                .message("Error al comunicarse con otro microservicio: " + ex.getStatusText())
+                .path(request.getPath().value())
+                .build();
+        return new ResponseEntity<>(errorResponse, ex.getStatusCode());
+    }
+
+    /**
+     * Handle service exception response entity.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the response entity
+     */
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, ServerHttpRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .error("Service Unavailable")
                 .message(ex.getMessage())
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     /**
-     * Handle method argument type mismatch exception response entity.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponseDTO> handleMethodArgumentTypeMismatchException(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("Parámetro inválido: " + ex.getName())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * Maneja la excepción cuando se accede a una URL que no existe (404).
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(NoHandlerFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message("La URL solicitada no existe: " + ex.getRequestURL())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
-    /**
-     * Maneja la excepción cuando se accede a un recurso estático que no existe (404).
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message("La ruta o el recurso no existe. Verifique la URL y vuelva a intentarlo.")
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
-    /**
-     * Maneja la excepción cuando el usuario no tiene permisos para acceder a un recurso (403).
+     * Handle access denied exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAccessDeniedException(
-            org.springframework.security.access.AccessDeniedException ex,
-            HttpServletRequest request) {
-
+    public ResponseEntity<ErrorResponseDTO> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Forbidden")
                 .message("No tienes permisos para acceder a este recurso.")
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
-
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
@@ -238,59 +201,47 @@ public class GlobalExceptionHandler {
      * @return the response entity
      */
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(AuthenticationException ex, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
                 .message("Credenciales incorrectas o autenticación inválida.")
-                .path(request.getRequestURI())
+                .path(request.getPath().value())
                 .build();
-
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     /**
-     * Handle service exception response entity.
+     * Handle global exception response entity.
      *
      * @param ex      the ex
      * @param request the request
      * @return the response entity
      */
-    @ExceptionHandler(ServiceException.class)
-    public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDTO> handleGlobalException(Exception ex, ServerHttpRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Internal Server Error")
+                .message("Ocurrió un error inesperado en el servidor: " + ex.getMessage())
+                .path(request.getPath().value())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
+    /**
+     * Handle exchange rate unavailable response entity.
+     *
+     * @param ex the ex
+     * @return the response entity
+     */
+    @ExceptionHandler(ExchangeRateUnavailableException.class)
+    public ResponseEntity<ErrorResponseDTO> handleExchangeRateUnavailable(ExchangeRateUnavailableException ex) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(HttpStatus.SERVICE_UNAVAILABLE.value())
                 .error("Service Unavailable")
                 .message(ex.getMessage())
-                .path(request.getRequestURI())
                 .build();
-
         return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-
-    /**
-     * Handle feign exception response entity.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(feign.FeignException.class)
-    public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
-        feign.FeignException feignEx = (feign.FeignException) ex;
-        HttpStatus status = HttpStatus.resolve(feignEx.status());
-        if (status == null || feignEx.status() <= 0) {
-            status = HttpStatus.SERVICE_UNAVAILABLE;
-        }
-
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(status.value())
-                .error(status == HttpStatus.SERVICE_UNAVAILABLE ? "Service Unavailable" : "Feign Client Error")
-                .message("Error de red: " + feignEx.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, status);
     }
 }
