@@ -5,6 +5,7 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,7 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * The type Authentication filter.
  */
 @Component
-public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+public class AuthenticationGatewayFilterFactory extends AbstractGatewayFilterFactory<AuthenticationGatewayFilterFactory.Config> {
 
     private final WebClient.Builder webClientBuilder;
 
@@ -22,7 +23,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
      *
      * @param webClientBuilder the web client builder
      */
-    public AuthenticationFilter(WebClient.Builder webClientBuilder) {
+    public AuthenticationGatewayFilterFactory(WebClient.Builder webClientBuilder) {
         super(Config.class);
         this.webClientBuilder = webClientBuilder;
     }
@@ -37,10 +38,13 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            String path = exchange.getRequest().getURI().getPath();
+            String path = exchange.getRequest().getPath().value();
 
-            boolean isAuthRoute = path.contains("/api/auth");
-            boolean isSwaggerRoute = path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/webjars");
+            boolean isAuthRoute = path.startsWith("/api/auth");
+            boolean isSwaggerRoute = path.contains("/v3/api-docs")
+                    || path.startsWith("/swagger-ui")
+                    || path.startsWith("/webjars")
+                    || path.startsWith("/swagger-ui.html");
 
             if (isAuthRoute || isSwaggerRoute) {
                 return chain.filter(exchange); // Dejamos pasar sin pedir token
@@ -50,8 +54,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
             // Comprobar que existe y que es un Bearer token
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete(); // Cortamos el paso
+                return unauthorized(exchange);
             }
 
             // Quitamos la palabra "Bearer " para quedarnos solo con el JWT
@@ -60,23 +63,26 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             // 3. Llamar al Auth Server para validar el token
             return webClientBuilder.build()
                     .get()
-                    .uri("lb://auth-service/api/auth/validate?token=" + tokenLimpio)
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("lb")
+                            .host("auth-service")
+                            .path("/api/auth/validate")
+                            .queryParam("token", tokenLimpio)
+                            .build())
                     .retrieve()
                     .bodyToMono(Boolean.class)
                     .flatMap(isValid -> {
                         if (isValid != null && isValid) {
                             return chain.filter(exchange); // ¡Token válido! Pasa al microservicio
                         } else {
-                            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                            return exchange.getResponse().setComplete(); // Token inventado
+                            return unauthorized(exchange);
                         }
                     })
                     .onErrorResume(e -> {
                         if (e instanceof WebClientResponseException webClientResponseException) {
                             HttpStatus authStatus = HttpStatus.resolve(webClientResponseException.getStatusCode().value());
                             if (authStatus == HttpStatus.UNAUTHORIZED || authStatus == HttpStatus.FORBIDDEN) {
-                                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                                return exchange.getResponse().setComplete();
+                                return unauthorized(exchange);
                             }
                         }
 
@@ -89,5 +95,10 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         return exchange.getResponse().setComplete();
                     });
         };
+    }
+
+    private static reactor.core.publisher.Mono<Void> unauthorized(ServerWebExchange exchange) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
     }
 }

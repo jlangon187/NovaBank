@@ -1,20 +1,20 @@
 package com.jlanzasg.novabank.auth.repository;
 
 import com.jlanzasg.novabank.auth.model.Usuario;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 /**
  * The interface Usuario repository.
  */
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+public interface UsuarioRepository extends ReactiveCrudRepository<Usuario, Long> {
     /**
      * Find by email optional.
      *
      * @param email the email
      * @return the optional
      */
-    Optional<Usuario> findByEmail(String email);
+    Mono<Usuario> findByEmail(String email);
 }
