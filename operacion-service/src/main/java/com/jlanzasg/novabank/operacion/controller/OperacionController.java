@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
 /**
  * The type Operacion controller.
@@ -123,18 +122,25 @@ public class OperacionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
 
-        LocalDateTime inicio = null;
-        LocalDateTime fin = null;
-
-        if (fechaInicio != null) {
-            inicio = fechaInicio.atStartOfDay();
-        }
-
-        if (fechaFin != null) {
-            fin = fechaFin.atTime(LocalTime.MAX);
-        }
+        LocalDateTime inicio = (fechaInicio != null) ? fechaInicio.atStartOfDay() : null;
+        LocalDateTime fin = (fechaFin != null) ? fechaFin.atTime(LocalTime.MAX) : null;
 
         return operacionService.obtenerMovimientosPorCuentaYFecha(iban, inicio, fin);
+    }
+
+
+    /**
+     * Streaming movimientos flux.
+     *
+     * @return the flux
+     */
+    @Operation(summary = "Streaming en vivo de movimientos", description = "Abre una conexión persistente (SSE) para recibir notificaciones de nuevos movimientos en tiempo real.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Conexión SSE establecida con éxito")
+    })
+    @GetMapping(value = "/streaming/movimientos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<MovimientoResponseDTO> streamingMovimientos() {
+        return operacionService.obtenerStreamingMovimientos();
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.cuenta.service;
 
 import com.jlanzasg.novabank.cuenta.dto.cliente.response.ClienteResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
@@ -136,26 +137,22 @@ public class CuentaService {
     /**
      * Actualizar saldos mono.
      *
-     * @param ibanOrigen
-     * @param ibanDestino
-     * @param nuevoSaldoOrigen
-     * @param nuevoSaldoDestino
+     * @param request the request
      * @return
      */
     @Transactional
-    public Mono<Void> actualizarSaldos(String ibanOrigen, Double nuevoSaldoOrigen, String ibanDestino, Double nuevoSaldoDestino) {
-        Mono<Cuenta> cuentaOrigenMono = cuentaRepository.findByIban(ibanOrigen)
-                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + ibanOrigen)));
-        Mono<Cuenta> cuentaDestinoMono = cuentaRepository.findByIban(ibanDestino)
-                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + ibanDestino)));
+    public Mono<Void> actualizarSaldos(ActualizarSaldosRequestDTO request) {
+        Mono<Cuenta> cuentaOrigenMono = cuentaRepository.findByIban(request.getIbanOrigen())
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + request.getIbanOrigen())));
+        Mono<Cuenta> cuentaDestinoMono = cuentaRepository.findByIban(request.getIbanDestino())
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con IBAN: " + request.getIbanDestino())));
 
         return Mono.zip(cuentaOrigenMono, cuentaDestinoMono)
                 .flatMap(tuple -> {
                     Cuenta cuentaOrigen = tuple.getT1();
+                    cuentaOrigen.setBalance(request.getNuevoSaldoOrigen());
                     Cuenta cuentaDestino = tuple.getT2();
-
-                    cuentaOrigen.setBalance(cuentaOrigen.getBalance() - nuevoSaldoOrigen);
-                    cuentaDestino.setBalance(cuentaDestino.getBalance() + nuevoSaldoDestino);
+                    cuentaDestino.setBalance(request.getNuevoSaldoDestino());
 
                     return cuentaRepository.save(cuentaOrigen)
                             .then(cuentaRepository.save(cuentaDestino));
