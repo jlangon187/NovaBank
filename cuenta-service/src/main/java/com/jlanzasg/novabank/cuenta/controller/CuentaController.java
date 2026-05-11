@@ -1,5 +1,6 @@
 package com.jlanzasg.novabank.cuenta.controller;
 
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
@@ -112,5 +113,27 @@ public class CuentaController {
     @ResponseStatus(HttpStatus.OK)
     public Mono<Void> actualizarSaldo(@PathVariable String iban, @RequestParam Double nuevoSaldo) {
         return cuentaService.actualizarSaldo(iban, nuevoSaldo);
+    }
+
+
+    /**
+     * Actualizar saldo mono.
+     *
+     * @param request the request
+     * @return the mono
+     */
+    @Operation(summary = "Actualizar saldos de cuentas (Transferencia)", description = "Actualiza los saldos" +
+            " de dos cuentas bancarias involucradas en una transferencia (Endpoint interno para microservicios)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Saldos actualizados con éxito"),
+            @ApiResponse(responseCode = "404", description = "No se encontró una cuenta con el IBAN proporcionado para alguna de las cuentas involucradas")
+    })
+    @PutMapping("/saldos")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> actualizarSaldo(@RequestBody ActualizarSaldosRequestDTO request) {
+        return cuentaService.actualizarSaldos(
+                request.getIbanOrigen(), request.getNuevoSaldoOrigen(),
+                request.getIbanDestino(), request.getNuevoSaldoDestino()
+        );
     }
 }
