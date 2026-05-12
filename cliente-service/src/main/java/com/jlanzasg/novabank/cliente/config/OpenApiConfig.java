@@ -10,9 +10,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-        info = @Info(title = "API NovaBank", version = "1.0", description = "API REST del sistema de NovaBank"),
-        servers = {@Server(url = "http://localhost:8080", description = "API Gateway")},
-        security = {@SecurityRequirement(name = "bearerAuth")}
+        info = @Info(title = "API de NovaBank", version = "1.0"),
+        security = {@SecurityRequirement(name = "bearerAuth")},
+        servers = {@Server(url = "/", description = "API Gateway")}
 )
 @SecurityScheme(
         name = "bearerAuth",
