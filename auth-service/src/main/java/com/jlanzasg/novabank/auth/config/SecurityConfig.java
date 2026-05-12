@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
-@EnableWebFluxSecurity // <-- La clave: Seguridad Reactiva
+@EnableWebFluxSecurity
 public class SecurityConfig {
 
     @Bean
