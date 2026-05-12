@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.operacion.service;
 
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
+import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
 import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
@@ -14,6 +15,8 @@ import com.jlanzasg.novabank.operacion.mapper.impl.OperacionMapper;
 import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -32,9 +35,11 @@ public class OperacionService {
 
     private final OperacionRepository operacionRepository;
     private final WebClient webClient;
+    private final ExchangeRateClient exchangeRateClient;
     private final OperacionMapper operacionMapper;
 
     private final Sinks.Many<MovimientoResponseDTO> movimientoSink = Sinks.many().multicast().directBestEffort();
+
     /**
      * Instantiates a new Operacion service.
      *
@@ -42,9 +47,10 @@ public class OperacionService {
      * @param webClientBuilder    the web client builder
      * @param operacionMapper     the operacion mapper
      */
-    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, OperacionMapper operacionMapper) {
+    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper) {
         this.operacionRepository = operacionRepository;
         this.webClient = webClientBuilder.baseUrl("http://cuenta-service").build();
+        this.exchangeRateClient = exchangeRateClient;
         this.operacionMapper = operacionMapper;
     }
 
@@ -114,7 +120,7 @@ public class OperacionService {
         return Mono.zip(
                 obtenerCuenta(dto.getCuentaOrigen()),
                 obtenerCuenta(dto.getCuentaDestino()),
-                obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
+                exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
         ).flatMapMany(tuple -> {
             CuentaResponseDTO cuentaOrigen = tuple.getT1();
             CuentaResponseDTO cuentaDestino = tuple.getT2();
@@ -237,35 +243,12 @@ public class OperacionService {
                 .doOnNext(movimientoSink::tryEmitNext);
     }
 
+
     /**
-     * Obtener tasa cambio segura mono.
+     * Obtener streaming movimientos flux.
      *
-     * @param monedaOrigen
-     * @return
+     * @return the flux
      */
-    private Mono<Double> obtenerTasaCambioSegura(String monedaOrigen, String monedaDestino) {
-        String from = (monedaOrigen == null || monedaOrigen.isBlank()) ? "EUR" : monedaOrigen;
-        String to = (monedaDestino == null || monedaDestino.isBlank()) ? "EUR" : monedaDestino;
-
-        if (from.equalsIgnoreCase(to)) {
-            return Mono.just(1.0);
-        }
-
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .scheme("http")
-                        .host("exchange-rate-mock-service")
-                        .path("/api/exchange-rate")
-                        .queryParam("from", from)
-                        .queryParam("to", to)
-                        .build())
-                .retrieve()
-                .bodyToMono(java.util.Map.class)
-                .map(res -> (Double) res.get("tasaCambio"))
-                .timeout(java.time.Duration.ofSeconds(3))
-                .onErrorMap(ex -> new ExchangeRateUnavailableException(from, to, ex));
-    }
-
     public Flux<MovimientoResponseDTO> obtenerStreamingMovimientos() {
         return movimientoSink.asFlux()
                 .onBackpressureDrop(movimientoDrop -> {
