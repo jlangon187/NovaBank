@@ -8,15 +8,13 @@ import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.operacion.exception.DuplicateException;
-import com.jlanzasg.novabank.operacion.exception.ExchangeRateUnavailableException;
 import com.jlanzasg.novabank.operacion.exception.NotFoundException;
 import com.jlanzasg.novabank.operacion.exception.SaldoInsuficienteException;
 import com.jlanzasg.novabank.operacion.mapper.impl.OperacionMapper;
 import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import io.micrometer.tracing.Tracer;
 
 import java.time.LocalDateTime;
 
@@ -31,6 +30,7 @@ import java.time.LocalDateTime;
  * The type Operacion service.
  */
 @Service
+@Slf4j
 public class OperacionService {
 
     private final OperacionRepository operacionRepository;
@@ -117,38 +117,45 @@ public class OperacionService {
             return Flux.error(new DuplicateException("No se puede realizar una transferencia a la misma cuenta."));
         }
 
-        return Mono.zip(
-                obtenerCuenta(dto.getCuentaOrigen()),
-                obtenerCuenta(dto.getCuentaDestino()),
-                exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
-        ).flatMapMany(tuple -> {
-            CuentaResponseDTO cuentaOrigen = tuple.getT1();
-            CuentaResponseDTO cuentaDestino = tuple.getT2();
-            Double tasa = tuple.getT3();
+        return Flux.deferContextual(ctx -> {
+            String traceId = ctx.getOrDefault("traceId", "NO-TRACE");
 
-            if (cuentaOrigen.getBalance() < dto.getImporte()) {
-                return Flux.error(new SaldoInsuficienteException("Fondos insuficientes en la cuenta de origen. Balance actual: " + cuentaOrigen.getBalance()));
-            }
+            log.info("[TraceID: {}] Iniciando transferencia de {} a {} por valor de {}",
+                    traceId, dto.getCuentaOrigen(), dto.getCuentaDestino(), dto.getImporte());
+
+            return Mono.zip(
+                    obtenerCuenta(dto.getCuentaOrigen()),
+                    obtenerCuenta(dto.getCuentaDestino()),
+                    exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
+            ).flatMapMany(tuple -> {
+                CuentaResponseDTO cuentaOrigen = tuple.getT1();
+                CuentaResponseDTO cuentaDestino = tuple.getT2();
+                Double tasa = tuple.getT3();
+
+                if (cuentaOrigen.getBalance() < dto.getImporte()) {
+                    return Flux.error(new SaldoInsuficienteException("Fondos insuficientes en la cuenta de origen. Balance actual: " + cuentaOrigen.getBalance()));
+                }
 
 
-            Double importeExtraido = dto.getImporte();
-            Double importeIngresado = dto.getImporte() * tasa;
+                Double importeExtraido = dto.getImporte();
+                Double importeIngresado = dto.getImporte() * tasa;
 
-            ActualizarSaldosRequestDTO actualizarSaldosRequest = new ActualizarSaldosRequestDTO();
-            actualizarSaldosRequest.setIbanOrigen(dto.getCuentaOrigen());
-            actualizarSaldosRequest.setIbanDestino(dto.getCuentaDestino());
-            actualizarSaldosRequest.setNuevoSaldoOrigen(cuentaOrigen.getBalance() - importeExtraido);
-            actualizarSaldosRequest.setNuevoSaldoDestino(cuentaDestino.getBalance() + importeIngresado);
+                ActualizarSaldosRequestDTO actualizarSaldosRequest = new ActualizarSaldosRequestDTO();
+                actualizarSaldosRequest.setIbanOrigen(dto.getCuentaOrigen());
+                actualizarSaldosRequest.setIbanDestino(dto.getCuentaDestino());
+                actualizarSaldosRequest.setNuevoSaldoOrigen(cuentaOrigen.getBalance() - importeExtraido);
+                actualizarSaldosRequest.setNuevoSaldoDestino(cuentaDestino.getBalance() + importeIngresado);
 
-            return webClient.put()
-                    .uri("/cuentas/saldos")
-                    .bodyValue(actualizarSaldosRequest)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .thenMany(Flux.concat(
-                            guardarMovimiento(dto.getCuentaOrigen(), importeExtraido, TipoMovimiento.TRANSFERENCIA_SALIENTE),
-                            guardarMovimiento(dto.getCuentaDestino(), importeIngresado, TipoMovimiento.TRANSFERENCIA_ENTRANTE)
-                    ));
+                return webClient.put()
+                        .uri("/cuentas/saldos")
+                        .bodyValue(actualizarSaldosRequest)
+                        .retrieve()
+                        .bodyToMono(Void.class)
+                        .thenMany(Flux.concat(
+                                guardarMovimiento(dto.getCuentaOrigen(), importeExtraido, TipoMovimiento.TRANSFERENCIA_SALIENTE),
+                                guardarMovimiento(dto.getCuentaDestino(), importeIngresado, TipoMovimiento.TRANSFERENCIA_ENTRANTE)
+                        ));
+            });
         });
     }
 
@@ -230,7 +237,8 @@ public class OperacionService {
      * @param tipoMovimiento
      * @return
      */
-    private Mono<MovimientoResponseDTO> guardarMovimiento(String iban, Double importe, TipoMovimiento tipoMovimiento) {
+    private Mono<MovimientoResponseDTO> guardarMovimiento(String iban, Double importe, TipoMovimiento
+            tipoMovimiento) {
         Movimiento movimiento = Movimiento.builder()
                 .tipo(tipoMovimiento)
                 .cantidad(importe)
