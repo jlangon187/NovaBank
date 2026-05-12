@@ -29,7 +29,7 @@
 		<module>cuenta-service</module>
 		<module>operacion-service</module>
 		<module>api-gateway</module>
-		<module>auth-server</module>
+		<module>auth-service</module>
 		<module>exchange-rate-mock-service</module>
 	</modules>
 
