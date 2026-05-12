@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
+import reactor.core.publisher.Hooks;
 
 /**
  * The type Operacion service application.
@@ -17,5 +18,8 @@ public class OperacionServiceApplication {
      *
      * @param args the input arguments
      */
-    public static void main(String[] args) {SpringApplication.run(OperacionServiceApplication.class, args);}
+    public static void main(String[] args) {
+        Hooks.enableAutomaticContextPropagation();
+        SpringApplication.run(OperacionServiceApplication.class, args);
+    }
 }
