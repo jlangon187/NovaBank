@@ -7,6 +7,7 @@ import com.jlanzasg.novabank.cliente.exception.NotFoundException;
 import com.jlanzasg.novabank.cliente.mapper.impl.ClienteMapper;
 import com.jlanzasg.novabank.cliente.model.Cliente;
 import com.jlanzasg.novabank.cliente.repository.ClienteRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -72,6 +73,7 @@ public class ClienteService {
      * @param id the id
      * @return the mono
      */
+    @Cacheable(value = "clientes", key = "#id")
     public Mono<ClienteResponseDTO> findById(Long id) {
         return clienteRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Cliente con id " + id + " no encontrado")))
@@ -84,6 +86,7 @@ public class ClienteService {
      * @param dni the dni
      * @return the mono
      */
+    @Cacheable(value = "clientesDni", key = "#dni")
     public Mono<ClienteResponseDTO> findByDni(String dni) {
         return clienteRepository.findByDni(dni.toUpperCase())
                 .switchIfEmpty(Mono.error(new NotFoundException("Cliente con DNI " + dni.toUpperCase() + " no encontrado")))
