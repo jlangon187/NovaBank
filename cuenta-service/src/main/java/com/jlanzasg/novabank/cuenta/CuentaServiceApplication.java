@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
+import reactor.core.publisher.Hooks;
 
 /**
  * The type Cuenta service application.
@@ -17,5 +18,8 @@ public class CuentaServiceApplication {
      *
      * @param args the input arguments
      */
-    public static void main(String[] args) {SpringApplication.run(CuentaServiceApplication.class, args);}
+    public static void main(String[] args) {
+        Hooks.enableAutomaticContextPropagation();
+        SpringApplication.run(CuentaServiceApplication.class, args);
+    }
 }
