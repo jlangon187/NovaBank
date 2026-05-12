@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.cliente.config;
+package com.jlanzasg.novabank.auth.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-        info = @Info(title = "API de NovaBank", version = "1.0"),
+        info = @Info(title = "API de Autenticación de NovaBank", version = "1.0"),
         security = {@SecurityRequirement(name = "bearerAuth")},
         servers = {@Server(url = "/", description = "API Gateway")}
 )

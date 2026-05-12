@@ -1,6 +1,6 @@
-package com.jlanzasg.novabank.operacion.exception;
+package com.jlanzasg.novabank.auth.exception;
 
-import com.jlanzasg.novabank.operacion.dto.error.ErrorResponseDTO;
+import com.jlanzasg.novabank.auth.dto.error.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -154,18 +154,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponseDTO>> handleGlobalException(Exception ex, ServerHttpRequest request) {
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Ocurrió un error inesperado en el servidor: " + ex.getMessage(), request);
-    }
-
-    /**
-     * Handle exchange rate unavailable mono.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the mono
-     */
-    @ExceptionHandler(ExchangeRateUnavailableException.class)
-    public Mono<ResponseEntity<ErrorResponseDTO>> handleExchangeRateUnavailable(ExchangeRateUnavailableException ex, ServerHttpRequest request) {
-        return buildError(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", ex.getMessage(), request);
     }
 
     /**
