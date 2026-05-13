@@ -2,164 +2,208 @@ package com.jlanzasg.novabank.operacion.controller;
 
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.operacion.exception.DuplicateException;
-import com.jlanzasg.novabank.operacion.exception.NotFoundException;
+import com.jlanzasg.novabank.operacion.exception.ExchangeRateUnavailableException;
+import com.jlanzasg.novabank.operacion.exception.GlobalExceptionHandler;
 import com.jlanzasg.novabank.operacion.exception.SaldoInsuficienteException;
-import com.jlanzasg.novabank.operacion.exception.ServiceException;
 import com.jlanzasg.novabank.operacion.service.OperacionService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-
-/**
- * The type Operacion controller test.
- */
-@WebMvcTest(controllers = OperacionController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class OperacionControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
-    @MockitoBean
+    @Mock
     private OperacionService operacionService;
 
-    /**
-     * Deposito returns ok.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    void deposito_ReturnsOk() throws Exception {
-        when(operacionService.depositar(any())).thenReturn(new MovimientoResponseDTO());
+    @InjectMocks
+    private OperacionController operacionController;
 
-        mockMvc.perform(post("/operaciones/deposito")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"ibanCuenta\":\"ES91210000000000000001\",\"importe\":100.0}"))
-                .andExpect(status().isOk());
+    private void setupClient() {
+        this.webTestClient = WebTestClient.bindToController(operacionController)
+                .controllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
-    /**
-     * Deposito when invalid request returns bad request.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void deposito_WhenInvalidRequest_ReturnsBadRequest() throws Exception {
-        mockMvc.perform(post("/operaciones/deposito")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"ibanCuenta\":\"BAD\",\"importe\":0}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error").value("Bad Request"));
+    void deposito_ReturnsOk() {
+        setupClient();
+        MovimientoResponseDTO response = new MovimientoResponseDTO();
+        response.setTipoMovimiento("DEPOSITO");
+        when(operacionService.depositar(any())).thenReturn(Mono.just(response));
+
+        webTestClient.post()
+                .uri("/operaciones/deposito")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "cuentaIban": "ES91210000000000000001",
+                          "importe": 100.0
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.tipoMovimiento").isEqualTo("DEPOSITO");
     }
 
-    /**
-     * Retiro when saldo insuficiente returns conflict payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void retiro_WhenSaldoInsuficiente_ReturnsConflictPayload() throws Exception {
-        when(operacionService.retirar(any())).thenThrow(new SaldoInsuficienteException("Fondos insuficientes"));
+    void streamMovimientos_RecibeEventos() {
+        setupClient();
+        MovimientoResponseDTO m1 = new MovimientoResponseDTO();
+        m1.setTipoMovimiento("DEPOSITO");
+        MovimientoResponseDTO m2 = new MovimientoResponseDTO();
+        m2.setTipoMovimiento("RETIRO");
 
-        mockMvc.perform(post("/operaciones/retiro")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"ibanCuenta\":\"ES91210000000000000001\",\"importe\":100.0}"))
-                .andExpect(status().isConflict())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error").value("Conflict"))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message").value("Fondos insuficientes"));
+        when(operacionService.obtenerStreamingMovimientos()).thenReturn(Flux.just(m1, m2));
+
+        FluxExchangeResult<MovimientoResponseDTO> result = webTestClient.get()
+                .uri("/operaciones/streaming/movimientos")
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult(MovimientoResponseDTO.class);
+
+        StepVerifier.create(result.getResponseBody())
+                .expectNextCount(2)
+                .thenCancel()
+                .verify();
     }
 
-    /**
-     * Obtener saldo when cuenta no existe returns not found payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void obtenerSaldo_WhenCuentaNoExiste_ReturnsNotFoundPayload() throws Exception {
-        when(operacionService.consultarSaldo("ES404")).thenThrow(new NotFoundException("Cuenta no encontrada"));
+    void deposito_WhenBodyInvalid_Returns400() {
+        setupClient();
 
-        mockMvc.perform(get("/operaciones/saldo/ES404"))
-                .andExpect(status().isNotFound())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error").value("Not Found"))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message").value("Cuenta no encontrada"));
+        webTestClient.post()
+                .uri("/operaciones/deposito")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "cuentaIban": "BAD",
+                          "importe": 0
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Bad Request")
+                .jsonPath("$.path").isEqualTo("/operaciones/deposito");
     }
 
-    /**
-     * Transferencia when same account returns conflict payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void transferencia_WhenSameAccount_ReturnsConflictPayload() throws Exception {
-        when(operacionService.transferir(any())).thenThrow(new DuplicateException("No se puede realizar una transferencia a la misma cuenta."));
+    void transferencia_WhenMismaCuenta_Returns409() {
+        setupClient();
+        when(operacionService.transferir(any())).thenReturn(Flux.error(new DuplicateException("Misma cuenta")));
 
-        mockMvc.perform(post("/operaciones/transferencia")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"cuentaOrigen\":\"ES91210000000000000001\",\"cuentaDestino\":\"ES91210000000000000001\",\"importe\":10.0}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflict"));
+        webTestClient.post()
+                .uri("/operaciones/transferencia")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "monedaOrigen": "EUR",
+                          "monedaDestino": "EUR",
+                          "cuentaOrigen": "ES91210000000000000001",
+                          "cuentaDestino": "ES91210000000000000001",
+                          "importe": 10.0
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Misma cuenta");
     }
 
-    /**
-     * Obtener movimientos with date filters returns ok.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void obtenerMovimientos_WithDateFilters_ReturnsOk() throws Exception {
-        MovimientoResponseDTO movimiento = new MovimientoResponseDTO();
-        movimiento.setTipoMovimiento("DEPOSITO");
-        when(operacionService.obtenerMovimientosPorCuentaYFecha(any(), any(), any())).thenReturn(List.of(movimiento));
+    void transferencia_WhenSaldoInsuficiente_Returns409() {
+        setupClient();
+        when(operacionService.transferir(any())).thenReturn(Flux.error(new SaldoInsuficienteException("Sin saldo")));
 
-        mockMvc.perform(get("/operaciones/movimientos/ES1")
-                        .param("fechaInicio", "2026-01-01")
-                        .param("fechaFin", "2026-01-31"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].tipoMovimiento").value("DEPOSITO"));
+        webTestClient.post()
+                .uri("/operaciones/transferencia")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "monedaOrigen": "EUR",
+                          "monedaDestino": "USD",
+                          "cuentaOrigen": "ES91210000000000000001",
+                          "cuentaDestino": "ES91210000000000000015",
+                          "importe": 1000.0
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Sin saldo");
     }
 
-    /**
-     * Obtener movimientos when invalid date format returns bad request.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void obtenerMovimientos_WhenInvalidDateFormat_ReturnsBadRequest() throws Exception {
-        mockMvc.perform(get("/operaciones/movimientos/ES1")
-                        .param("fechaInicio", "01-01-2026"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"));
+    void transferencia_WhenExchangeUnavailable_Returns503() {
+        setupClient();
+        when(operacionService.transferir(any())).thenReturn(Flux.error(new ExchangeRateUnavailableException("FX caido")));
+
+        webTestClient.post()
+                .uri("/operaciones/transferencia")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "monedaOrigen": "USD",
+                          "monedaDestino": "EUR",
+                          "cuentaOrigen": "ES91210000000000000001",
+                          "cuentaDestino": "ES91210000000000000015",
+                          "importe": 50.0
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("FX caido");
     }
 
-    /**
-     * Deposito when service fails returns internal server error payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void deposito_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
-        when(operacionService.depositar(any())).thenThrow(new ServiceException("Cuenta service no disponible"));
+    void streamMovimientos_WhenNoEvents_ClosesWithoutItems() {
+        setupClient();
+        when(operacionService.obtenerStreamingMovimientos()).thenReturn(Flux.empty());
 
-        mockMvc.perform(post("/operaciones/deposito")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"ibanCuenta\":\"ES91210000000000000001\",\"importe\":100.0}"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.error").value("Service Unavailable"))
-                .andExpect(jsonPath("$.status").value(503));
+        FluxExchangeResult<MovimientoResponseDTO> result = webTestClient.get()
+                .uri("/operaciones/streaming/movimientos")
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult(MovimientoResponseDTO.class);
+
+        StepVerifier.create(result.getResponseBody())
+                .verifyComplete();
+    }
+
+    @Test
+    void obtenerMovimientos_WithDateRange_ReturnsFilteredResult() {
+        setupClient();
+        MovimientoResponseDTO response = new MovimientoResponseDTO();
+        response.setTipoMovimiento("RETIRO");
+        response.setFecha(LocalDateTime.of(2026, 5, 10, 12, 0));
+        when(operacionService.obtenerMovimientosPorCuentaYFecha(any(), any(), any())).thenReturn(Flux.just(response));
+
+        webTestClient.get()
+                .uri("/operaciones/movimientos/ES91210000000000000001?fechaInicio=2026-05-10&fechaFin=2026-05-10")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].tipoMovimiento").isEqualTo("RETIRO")
+                .jsonPath("$[0].fecha").exists();
     }
 }

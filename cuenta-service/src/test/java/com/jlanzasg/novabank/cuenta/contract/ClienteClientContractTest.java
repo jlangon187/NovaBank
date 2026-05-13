@@ -1,89 +1,57 @@
 package com.jlanzasg.novabank.cuenta.contract;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.jlanzasg.novabank.cuenta.client.ClienteClient;
-import com.jlanzasg.novabank.cuenta.dto.cliente.response.ClienteResponseDTO;
-import feign.FeignException;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
+import com.jlanzasg.novabank.cuenta.mapper.impl.CuentaMapper;
+import com.jlanzasg.novabank.cuenta.model.Cuenta;
+import com.jlanzasg.novabank.cuenta.repository.CuentaRepository;
+import com.jlanzasg.novabank.cuenta.service.CuentaService;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import com.jlanzasg.novabank.cuenta.client.ClienteServiceFallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.io.IOException;
 
-/**
- * The type Cliente client contract test.
- */
-@SpringBootTest(classes = ClienteClientContractTest.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test")
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 class ClienteClientContractTest {
 
-    /**
-     * The constant wm.
-     */
-    @RegisterExtension
-    static WireMockExtension wm = WireMockExtension.newInstance().options(options().dynamicPort()).build();
+    @Mock
+    private CuentaRepository cuentaRepository;
 
-    /**
-     * Props.
-     *
-     * @param registry the registry
-     */
-    @DynamicPropertySource
-    static void props(DynamicPropertyRegistry registry) {
-        registry.add("spring.cloud.openfeign.client.config.cliente-service.url", wm::baseUrl);
-        registry.add("spring.cloud.openfeign.circuitbreaker.enabled", () -> "false");
-        registry.add("eureka.client.enabled", () -> "false");
-        registry.add("spring.cloud.config.enabled", () -> "false");
-    }
-
-    @Autowired
-    private ClienteClient clienteClient;
-
-    /**
-     * Gets cliente by id when 200 maps response.
-     */
     @Test
-    void getClienteById_When200_MapsResponse() {
-        wm.stubFor(get(urlEqualTo("/clientes/1"))
-                .willReturn(okJson("{\"id\":1,\"dni\":\"12345678A\",\"nombre\":\"Ana\",\"apellidos\":\"Lopez\",\"email\":\"ana@test.com\",\"telefono\":\"600111222\"}")));
+    void crearCuenta_UsesClienteServiceHttpResponse() throws IOException, InterruptedException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"id\":1,\"dni\":\"12345678A\",\"nombre\":\"Ana\",\"apellidos\":\"Lopez\",\"email\":\"ana@test.com\",\"telefono\":\"600111222\"}"));
+            server.start();
 
-        ClienteResponseDTO response = clienteClient.getClienteById(1L);
+            when(cuentaRepository.obtenerUltimoId()).thenReturn(Mono.just(0L));
+            when(cuentaRepository.save(any(Cuenta.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
-        assertThat(response.getId()).isEqualTo(1L);
-        assertThat(response.getDni()).isEqualTo("12345678A");
-    }
+            CuentaService service = new CuentaService(
+                    cuentaRepository,
+                    WebClient.builder(),
+                    new CuentaMapper(),
+                    String.format("http://localhost:%s", server.getPort())
+            );
 
-    /**
-     * Gets cliente by id when 404 throws feign not found.
-     */
-    @Test
-    void getClienteById_When404_ThrowsFeignNotFound() {
-        wm.stubFor(get(urlEqualTo("/clientes/999"))
-                .willReturn(aResponse().withStatus(404)));
+            StepVerifier.create(service.crearCuenta(1L, new CuentaRequestDTO()))
+                    .expectNextMatches(c -> c.getClienteId().equals(1L) && c.getIban().equals("ES91210000000000000001"))
+                    .verifyComplete();
 
-        assertThatThrownBy(() -> clienteClient.getClienteById(999L))
-                .isInstanceOf(FeignException.NotFound.class);
-    }
-
-    /**
-     * The type Test app.
-     */
-    @SpringBootConfiguration
-    @EnableAutoConfiguration
-    @EnableFeignClients(clients = ClienteClient.class)
-    @Import(ClienteServiceFallback.class)
-    static class TestApp {
+            okhttp3.mockwebserver.RecordedRequest request = server.takeRequest();
+            org.assertj.core.api.Assertions.assertThat(request.getMethod()).isEqualTo("GET");
+            org.assertj.core.api.Assertions.assertThat(request.getPath()).isEqualTo("/clientes/1");
+        }
     }
 }

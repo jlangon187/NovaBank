@@ -7,9 +7,11 @@ import com.jlanzasg.novabank.cliente.exception.NotFoundException;
 import com.jlanzasg.novabank.cliente.mapper.impl.ClienteMapper;
 import com.jlanzasg.novabank.cliente.model.Cliente;
 import com.jlanzasg.novabank.cliente.repository.ClienteRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 
 /**
  * The type Cliente service.
@@ -32,76 +34,84 @@ public class ClienteService {
     }
 
     /**
-     * Save cliente response dto.
+     * Save mono.
      *
      * @param clienteDto the cliente dto
-     * @return the cliente response dto
+     * @return the mono
      */
-    public ClienteResponseDTO save(ClienteRequestDTO clienteDto) {
+    public Mono<ClienteResponseDTO> save(ClienteRequestDTO clienteDto) {
 
-        List<String> conflictos = clienteRepository.findConflictos(
-                clienteDto.getDni(),
-                clienteDto.getEmail(),
-                clienteDto.getTelefono());
+        return clienteRepository.findConflictos(
+                        clienteDto.getDni(),
+                        clienteDto.getEmail(),
+                        clienteDto.getTelefono())
+                .collectList()
+                .flatMap(conflictos -> {
 
-        if (!conflictos.isEmpty()) {
-            String error = conflictos.get(0);
-            switch (error) {
-                case "DNI" -> throw new DuplicateException("El DNI " + clienteDto.getDni() + " ya existe en la base de datos");
-                case "EMAIL" -> throw new DuplicateException("El email " + clienteDto.getEmail() + " ya existe en la base de datos");
-                case "TELEFONO" -> throw new DuplicateException("El teléfono " + clienteDto.getTelefono() + " ya existe en la base de datos");
-            }
-        }
+                    if (!conflictos.isEmpty()) {
+                        String error = conflictos.get(0);
+                        return switch (error) {
+                            case "DNI" ->
+                                    Mono.error(new DuplicateException("El DNI " + clienteDto.getDni() + " ya existe en la base de datos"));
+                            case "EMAIL" ->
+                                    Mono.error(new DuplicateException("El email " + clienteDto.getEmail() + " ya existe en la base de datos"));
+                            case "TELEFONO" ->
+                                    Mono.error(new DuplicateException("El teléfono " + clienteDto.getTelefono() + " ya existe en la base de datos"));
+                            default -> Mono.error(new RuntimeException("Conflicto desconocido"));
+                        };
+                    }
 
-        Cliente clienteMapeado = clienteMapper.toEntity(clienteDto);
-        clienteRepository.save(clienteMapeado);
-        return clienteMapper.toResponseDTO(clienteMapeado);
+                    Cliente clienteMapeado = clienteMapper.toEntity(clienteDto);
+                    return clienteRepository.save(clienteMapeado)
+                            .map(clienteMapper::toResponseDTO);
+                });
     }
 
     /**
-     * Find by ID Cliente.
+     * Find by id mono.
      *
      * @param id the id
-     * @return ClienteResponseDTO
+     * @return the mono
      */
-    public ClienteResponseDTO findById(Long id) {
-        Cliente clienteMapeado = clienteRepository.findById(id).orElseThrow(() -> new NotFoundException("No se ha encontrado el cliente con el id: " + id));
-        return clienteMapper.toResponseDTO(clienteMapeado);
+    @Cacheable(value = "clientes", key = "#id")
+    public Mono<ClienteResponseDTO> findById(Long id) {
+        return clienteRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Cliente con id " + id + " no encontrado")))
+                .map(clienteMapper::toResponseDTO);
     }
 
     /**
-     * Find by DNI Cliente
+     * Find by dni mono.
      *
-     * @param dni
-     * @return ClienteResponseDTO
+     * @param dni the dni
+     * @return the mono
      */
-    public ClienteResponseDTO findByDni(String dni) {
-        Cliente clienteMapeado = clienteRepository.findByDni(dni.toUpperCase()).orElseThrow(() -> new NotFoundException("Cliente con DNI " + dni.toUpperCase() + " no encontrado"));
-        return clienteMapper.toResponseDTO(clienteMapeado);
+    @Cacheable(value = "clientesDni", key = "#dni")
+    public Mono<ClienteResponseDTO> findByDni(String dni) {
+        return clienteRepository.findByDni(dni.toUpperCase())
+                .switchIfEmpty(Mono.error(new NotFoundException("Cliente con DNI " + dni.toUpperCase() + " no encontrado")))
+                .map(clienteMapper::toResponseDTO);
     }
 
     /**
-     * Find all list.
+     * Find all flux.
      *
-     * @return the list
+     * @return the flux
      */
-    public List<ClienteResponseDTO> findAll() {
-        List<Cliente> clientes = clienteRepository.findAll();
-
-        return clientes.stream()
-                .map(clienteMapper::toResponseDTO)
-                .toList();
+    public Flux<ClienteResponseDTO> findAll() {
+        return clienteRepository.findAll()
+                .map(clienteMapper::toResponseDTO);
     }
 
     /**
-     * Delete by id.
+     * Delete by id mono.
      *
      * @param id the id
+     * @return the mono
      */
-    public void deleteById(Long id) {
-        if (!clienteRepository.existsById(id)) {
-            throw new NotFoundException("Cliente con id " + id + " no encontrado");
-        }
-        clienteRepository.deleteById(id);
+    public Mono<Void> deleteById(Long id) {
+        return clienteRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Cliente con id " + id + " no encontrado")))
+                .flatMap(cliente -> clienteRepository.delete(cliente));
     }
 }

@@ -1,253 +1,283 @@
 package com.jlanzasg.novabank.operacion.service;
 
-import com.jlanzasg.novabank.operacion.client.CuentaClient;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
+import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaSaldoResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.operacion.exception.DuplicateException;
 import com.jlanzasg.novabank.operacion.exception.NotFoundException;
 import com.jlanzasg.novabank.operacion.exception.SaldoInsuficienteException;
-import com.jlanzasg.novabank.operacion.exception.ServiceException;
-import com.jlanzasg.novabank.operacion.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.operacion.mapper.impl.OperacionMapper;
 import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
-import feign.FeignException;
-import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * The type Operacion service.
  */
 @Service
+@Slf4j
 public class OperacionService {
 
     private final OperacionRepository operacionRepository;
-    private final CuentaClient cuentaClient;
+    private final WebClient webClient;
+    private final ExchangeRateClient exchangeRateClient;
     private final OperacionMapper operacionMapper;
-    private final CuentaMapper cuentaMapper;
+
+    private final Sinks.Many<MovimientoResponseDTO> movimientoSink = Sinks.many().multicast().directBestEffort();
 
     /**
      * Instantiates a new Operacion service.
      *
      * @param operacionRepository the operacion repository
-     * @param cuentaRepository    the cuenta repository
-     * @param cuentaClient        the cuenta client
+     * @param webClientBuilder    the web client builder
+     * @param exchangeRateClient  the exchange rate client
      * @param operacionMapper     the operacion mapper
-     * @param cuentaMapper        the cuenta mapper
      */
-    public OperacionService(OperacionRepository operacionRepository, CuentaClient cuentaRepository, CuentaClient cuentaClient, OperacionMapper operacionMapper, CuentaMapper cuentaMapper) {
+    @Autowired
+    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper) {
         this.operacionRepository = operacionRepository;
-        this.cuentaClient = cuentaClient;
+        this.webClient = webClientBuilder.baseUrl("http://cuenta-service").build();
+        this.exchangeRateClient = exchangeRateClient;
         this.operacionMapper = operacionMapper;
-        this.cuentaMapper = cuentaMapper;
     }
 
     /**
-     * Depositar movimiento response dto.
+     * Instantiates a new Operacion service.
      *
-     * @param dto the dto
-     * @return the movimiento response dto
+     * @param operacionRepository  the operacion repository
+     * @param webClientBuilder     the web client builder
+     * @param exchangeRateClient   the exchange rate client
+     * @param operacionMapper      the operacion mapper
+     * @param cuentaServiceBaseUrl the cuenta service base url
      */
-    @Transactional
-    public MovimientoResponseDTO depositar(OperacionRequestDTO dto) {
-
-        if (dto.getImporte() <= 0) {
-            throw new IllegalArgumentException("El importe del depósito debe ser mayor que cero.");
-        }
-
-        CuentaResponseDTO cuentaDTO;
-
-        try {
-            cuentaDTO = cuentaClient.getCuentaByIban(dto.getIbanCuenta());
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("La cuenta con IBAN " + dto.getIbanCuenta() + " no existe.");
-        }
-
-        cuentaDTO.setBalance(cuentaDTO.getBalance() + dto.getImporte());
-
-        try {
-            cuentaClient.actualizarSaldo(cuentaDTO.getIban(), cuentaDTO.getBalance());
-        }  catch (FeignException e) {
-            throw new ServiceException("El servicio de operaciones falló al actualizar el saldo de la cuenta con IBAN " + dto.getIbanCuenta() + ". Detalles: " + e.getMessage());
-        }
-
-        Movimiento movimiento = operacionMapper.toEntity(dto);
-        movimiento.setTipo(TipoMovimiento.DEPOSITO);
-        movimiento.setCuentaIban(dto.getIbanCuenta());
-        Movimiento movimientoGuardado = operacionRepository.save(movimiento);
-
-        return operacionMapper.toResponseDTO(movimientoGuardado);
+    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper, String cuentaServiceBaseUrl) {
+        this.operacionRepository = operacionRepository;
+        this.webClient = webClientBuilder.baseUrl(cuentaServiceBaseUrl).build();
+        this.exchangeRateClient = exchangeRateClient;
+        this.operacionMapper = operacionMapper;
     }
 
     /**
-     * Retirar movimiento response dto.
+     * Depositar mono.
      *
      * @param dto the dto
-     * @return the movimiento response dto
+     * @return the mono
      */
     @Transactional
-    public MovimientoResponseDTO retirar(OperacionRequestDTO dto) {
+    public Mono<MovimientoResponseDTO> depositar(OperacionRequestDTO dto) {
 
         if (dto.getImporte() <= 0) {
-            throw new IllegalArgumentException("El importe de la retirada debe ser mayor que cero.");
+            return Mono.error(new IllegalArgumentException("El importe del depósito debe ser mayor que cero."));
         }
 
-        CuentaResponseDTO cuentaDTO;
+        return obtenerCuenta(dto.getCuentaIban())
+                .flatMap(cuentaDTO -> {
+                    Double nuevoSaldo = cuentaDTO.getBalance() + dto.getImporte();
 
-        try {
-            cuentaDTO = cuentaClient.getCuentaByIban(dto.getIbanCuenta());
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("La cuenta con IBAN " + dto.getIbanCuenta() + " no existe.");
-        }
-
-        if (cuentaDTO.getBalance() < dto.getImporte()) {
-            throw new SaldoInsuficienteException("Fondos insuficientes para realizar la retirada. Balance actual: " + cuentaDTO.getBalance());
-        }
-
-        cuentaDTO.setBalance(cuentaDTO.getBalance() - dto.getImporte());
-
-        try {
-            cuentaClient.actualizarSaldo(cuentaDTO.getIban(), cuentaDTO.getBalance());
-        }  catch (FeignException e) {
-            throw new ServiceException("El servicio de operaciones falló al actualizar el saldo de la cuenta con IBAN " + dto.getIbanCuenta() + ". Detalles: " + e.getMessage());
-        }
-
-        Movimiento movimiento = operacionMapper.toEntity(dto);
-        movimiento.setTipo(TipoMovimiento.RETIRO);
-        movimiento.setCuentaIban(dto.getIbanCuenta());
-        Movimiento movimientoGuardado = operacionRepository.save(movimiento);
-
-        return operacionMapper.toResponseDTO(movimientoGuardado);
+                    return actualizarSaldoUnico(cuentaDTO.getIban(), nuevoSaldo)
+                            .then(guardarMovimiento(dto.getCuentaIban(), dto.getImporte(), TipoMovimiento.DEPOSITO));
+                });
     }
 
     /**
-     * Transferir list.
+     * Retirar mono.
      *
      * @param dto the dto
-     * @return the list
+     * @return the mono
      */
     @Transactional
-    public List<MovimientoResponseDTO> transferir(TransferenciaRequestDTO dto) {
+    public Mono<MovimientoResponseDTO> retirar(OperacionRequestDTO dto) {
 
         if (dto.getImporte() <= 0) {
-            throw new IllegalArgumentException("El importe de la transferencia debe ser mayor que cero.");
+            return Mono.error(new IllegalArgumentException("El importe de la retirada debe ser mayor que cero."));
         }
 
+        return obtenerCuenta(dto.getCuentaIban())
+                .flatMap(cuentaDTO -> {
+                    if (cuentaDTO.getBalance() < dto.getImporte()) {
+                        return Mono.error(new SaldoInsuficienteException("Fondos insuficientes. Balance actual: " + cuentaDTO.getBalance()));
+                    }
+
+                    Double nuevoSaldo = cuentaDTO.getBalance() - dto.getImporte();
+
+                    return actualizarSaldoUnico(cuentaDTO.getIban(), nuevoSaldo)
+                            .then(guardarMovimiento(dto.getCuentaIban(), dto.getImporte(), TipoMovimiento.RETIRO));
+                });
+    }
+
+    /**
+     * Transferir flux.
+     *
+     * @param dto the dto
+     * @return the flux
+     */
+    @Transactional
+    public Flux<MovimientoResponseDTO> transferir(TransferenciaRequestDTO dto) {
+        if (dto.getImporte() <= 0) {
+            return Flux.error(new IllegalArgumentException("El importe de la transferencia debe ser mayor que cero."));
+        }
         if (dto.getCuentaOrigen().equals(dto.getCuentaDestino())) {
-            throw new DuplicateException("No se puede realizar una transferencia a la misma cuenta.");
+            return Flux.error(new DuplicateException("No se puede realizar una transferencia a la misma cuenta."));
         }
 
-        CuentaResponseDTO cuentaOrigenDTO;
+        return Flux.deferContextual(ctx -> {
+            String traceId = ctx.getOrDefault("traceId", "NO-TRACE");
 
-        try {
-            cuentaOrigenDTO = cuentaClient.getCuentaByIban(dto.getCuentaOrigen());
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("La cuenta con IBAN " + dto.getCuentaOrigen() + " no existe.");
-        }
+            log.info("[TraceID: {}] Iniciando transferencia de {} a {} por valor de {}",
+                    traceId, dto.getCuentaOrigen(), dto.getCuentaDestino(), dto.getImporte());
 
-        CuentaResponseDTO cuentaDestinoDTO;
+            return exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
+                    .flatMapMany(tasa -> Mono.zip(
+                            obtenerCuenta(dto.getCuentaOrigen()),
+                            obtenerCuenta(dto.getCuentaDestino())
+                    ).flatMapMany(tuple -> {
+                CuentaResponseDTO cuentaOrigen = tuple.getT1();
+                CuentaResponseDTO cuentaDestino = tuple.getT2();
 
-        try {
-            cuentaDestinoDTO = cuentaClient.getCuentaByIban(dto.getCuentaDestino());
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("La cuenta con IBAN " + dto.getCuentaDestino() + " no existe.");
-        }
+                if (cuentaOrigen.getBalance() < dto.getImporte()) {
+                    return Flux.error(new SaldoInsuficienteException("Fondos insuficientes en la cuenta de origen. Balance actual: " + cuentaOrigen.getBalance()));
+                }
 
-        if (cuentaOrigenDTO.getBalance() < dto.getImporte()) {
-            throw new SaldoInsuficienteException("Fondos insuficientes para realizar la transferencia. Balance actual: " + cuentaOrigenDTO.getBalance());
-        }
 
-        cuentaOrigenDTO.setBalance(cuentaOrigenDTO.getBalance() - dto.getImporte());
-        cuentaDestinoDTO.setBalance(cuentaDestinoDTO.getBalance() + dto.getImporte());
+                Double importeExtraido = dto.getImporte();
+                Double importeIngresado = dto.getImporte() * tasa;
 
-        try {
-            cuentaClient.actualizarSaldo(cuentaOrigenDTO.getIban(), cuentaOrigenDTO.getBalance());
-        } catch (FeignException e) {
-            throw new ServiceException("Fallo de red al retirar el dinero del origen. Transferencia cancelada.");
-        }
+                ActualizarSaldosRequestDTO actualizarSaldosRequest = new ActualizarSaldosRequestDTO();
+                actualizarSaldosRequest.setIbanOrigen(dto.getCuentaOrigen());
+                actualizarSaldosRequest.setIbanDestino(dto.getCuentaDestino());
+                actualizarSaldosRequest.setNuevoSaldoOrigen(cuentaOrigen.getBalance() - importeExtraido);
+                actualizarSaldosRequest.setNuevoSaldoDestino(cuentaDestino.getBalance() + importeIngresado);
 
-        try {
-            cuentaClient.actualizarSaldo(cuentaDestinoDTO.getIban(), cuentaDestinoDTO.getBalance());
-        } catch (FeignException e) {
-            try {
-                Double saldoRestaurado = cuentaOrigenDTO.getBalance() + dto.getImporte();
-                cuentaClient.actualizarSaldo(cuentaOrigenDTO.getIban(), saldoRestaurado);
-            } catch (FeignException ex) {
-                throw new ServiceException("Error crítico: No se pudo restaurar el saldo de la cuenta origen después de un fallo al actualizar el destino. Detalles: " + ex.getMessage());
-            }
-
-            throw new ServiceException("Error al ingresar en destino. La transferencia ha sido cancelada y los fondos devueltos al origen.");
-        }
-
-        Movimiento movimientoOrigen = Movimiento.builder()
-                .tipo(TipoMovimiento.TRANSFERENCIA_SALIENTE)
-                .cantidad(dto.getImporte())
-                .cuentaIban(dto.getCuentaOrigen())
-                .build();
-
-        Movimiento movimientoDestino = Movimiento.builder()
-                .tipo(TipoMovimiento.TRANSFERENCIA_ENTRANTE)
-                .cantidad(dto.getImporte())
-                .cuentaIban(dto.getCuentaDestino())
-                .build();
-
-        Movimiento movimientoOrigenGuardado = operacionRepository.save(movimientoOrigen);
-        Movimiento movimientoDestinoGuardado = operacionRepository.save(movimientoDestino);
-
-        return List.of(
-                operacionMapper.toResponseDTO(movimientoOrigenGuardado),
-                operacionMapper.toResponseDTO(movimientoDestinoGuardado)
-        );
+                return webClient.put()
+                        .uri("/cuentas/saldos")
+                        .bodyValue(actualizarSaldosRequest)
+                        .retrieve()
+                        .bodyToMono(Void.class)
+                        .thenMany(Flux.concat(
+                                guardarMovimiento(dto.getCuentaOrigen(), importeExtraido, TipoMovimiento.TRANSFERENCIA_SALIENTE),
+                                guardarMovimiento(dto.getCuentaDestino(), importeIngresado, TipoMovimiento.TRANSFERENCIA_ENTRANTE)
+                        ));
+            }));
+        });
     }
 
     /**
-     * Obtener movimientos por cuenta y fecha list.
+     * Obtener movimientos por cuenta y fecha flux.
      *
      * @param iban        the iban
      * @param fechaInicio the fecha inicio
      * @param fechaFin    the fecha fin
-     * @return the list
+     * @return the flux
      */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<MovimientoResponseDTO> obtenerMovimientosPorCuentaYFecha(String iban, LocalDateTime
+    @Transactional(readOnly = true)
+    public Flux<MovimientoResponseDTO> obtenerMovimientosPorCuentaYFecha(String iban, LocalDateTime
             fechaInicio, LocalDateTime fechaFin) {
 
-        List<Movimiento> movimiento;
+        Flux<Movimiento> movimiento;
 
         if (fechaInicio != null && fechaFin != null) {
-            movimiento = operacionRepository.findByCuentaIbanAndFechaBetweenOrderByFechaDesc(iban, fechaInicio, fechaFin);
+            movimiento = operacionRepository.findByIbanAndFechaBetweenOrderByFechaDesc(iban, fechaInicio, fechaFin);
         } else {
-            movimiento = operacionRepository.findByCuentaIbanOrderByFechaDesc(iban);
+            movimiento = operacionRepository.findByIbanOrderByFechaDesc(iban);
         }
 
-        return movimiento.stream()
-                .map(operacionMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return movimiento.map(operacionMapper::toResponseDTO);
     }
 
     /**
-     * Consultar saldo.
+     * Consultar saldo mono.
      *
      * @param iban the iban
-     * @return the cuenta saldo response dto
+     * @return the mono
      */
-    public CuentaSaldoResponseDTO consultarSaldo(String iban) {
+    public Mono<CuentaSaldoResponseDTO> consultarSaldo(String iban) {
+        return webClient.get()
+                .uri("/cuentas/iban/{iban}", iban)
+                .retrieve()
+                .bodyToMono(CuentaSaldoResponseDTO.class)
+                .onErrorResume(WebClientResponseException.NotFound.class,
+                        e -> Mono.error(new NotFoundException("La cuenta con IBAN " + iban + " no existe.")));
+    }
 
-        CuentaResponseDTO cuenta;
+    /**
+     * Actualizar saldo unico mono.
+     *
+     * @param iban
+     * @param nuevoSaldo
+     * @return
+     */
+    private Mono<Void> actualizarSaldoUnico(String iban, Double nuevoSaldo) {
+        return webClient.put()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/cuentas/iban/{iban}/saldo")
+                        .queryParam("nuevoSaldo", nuevoSaldo)
+                        .build(iban))
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
 
-        try {
-            cuenta = cuentaClient.getCuentaByIban(iban);
-        } catch (FeignException.NotFound e) {
-            throw new NotFoundException("La cuenta con IBAN " + iban + " no existe.");
-        }
-        return cuentaMapper.toSaldoResponseDTO(cuenta);
+    /**
+     * Obtener la cuenta mono.
+     *
+     * @param iban
+     * @return
+     */
+    private Mono<CuentaResponseDTO> obtenerCuenta(String iban) {
+        return webClient.get()
+                .uri("/cuentas/iban/{iban}", iban)
+                .retrieve()
+                .bodyToMono(CuentaResponseDTO.class)
+                .onErrorResume(WebClientResponseException.NotFound.class,
+                        e -> Mono.error(new NotFoundException("La cuenta con IBAN " + iban + " no existe.")));
+    }
+
+    /**
+     * Guardar movimiento mono.
+     *
+     * @param iban
+     * @param importe
+     * @param tipoMovimiento
+     * @return
+     */
+    private Mono<MovimientoResponseDTO> guardarMovimiento(String iban, Double importe, TipoMovimiento
+            tipoMovimiento) {
+        Movimiento movimiento = Movimiento.builder()
+                .tipo(tipoMovimiento)
+                .cantidad(importe)
+                .iban(iban)
+                .fecha(LocalDateTime.now())
+                .build();
+
+        return operacionRepository.save(movimiento)
+                .map(operacionMapper::toResponseDTO)
+                .doOnNext(movimientoSink::tryEmitNext);
+    }
+
+
+    /**
+     * Obtener streaming movimientos flux.
+     *
+     * @return the flux
+     */
+    public Flux<MovimientoResponseDTO> obtenerStreamingMovimientos() {
+        return movimientoSink.asFlux()
+                .onBackpressureDrop(movimientoDrop -> {
+                    System.out.println("Movimiento descartado por backpressure: " + movimientoDrop);
+                });
     }
 }
