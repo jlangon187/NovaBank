@@ -5,10 +5,13 @@ import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDT
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.movimiento.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
+import com.jlanzasg.novabank.cuenta.exception.ServiceException;
 import com.jlanzasg.novabank.cuenta.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.cuenta.model.Cuenta;
 import com.jlanzasg.novabank.cuenta.repository.CuentaRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 /**
  * The type Cuenta service.
@@ -26,6 +30,7 @@ public class CuentaService {
     private final CuentaRepository cuentaRepository;
     private final WebClient webClient;
     private final CuentaMapper cuentaMapper;
+    private final Sinks.Many<MovimientoResponseDTO> movimientoSink;
 
 
     /**
@@ -40,12 +45,14 @@ public class CuentaService {
         this.cuentaRepository = cuentaRepository;
         this.webClient = webClientBuilder.baseUrl("http://cliente-service").build();
         this.cuentaMapper = cuentaMapper;
+        this.movimientoSink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
     public CuentaService(CuentaRepository cuentaRepository, WebClient.Builder webClientBuilder, CuentaMapper cuentaMapper, String clienteServiceBaseUrl) {
         this.cuentaRepository = cuentaRepository;
         this.webClient = webClientBuilder.baseUrl(clienteServiceBaseUrl).build();
         this.cuentaMapper = cuentaMapper;
+        this.movimientoSink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
     /**
@@ -77,7 +84,8 @@ public class CuentaService {
      * @return the flux
      */
     public Flux<CuentaSimpleResponseDTO> findAccountsByClientId(Long clienteId) {
-        return cuentaRepository.findAllByClienteId(clienteId)
+        return obtenerCliente(clienteId)
+                .thenMany(Flux.defer(() -> cuentaRepository.findAllByClienteId(clienteId)))
                 .map(cuentaMapper::toSimpleResponseDTO);
     }
 
@@ -133,6 +141,7 @@ public class CuentaService {
      * @param clienteId
      * @return
      */
+    @CircuitBreaker(name = "clienteService", fallbackMethod = "obtenerClienteFallback")
     private Mono<ClienteResponseDTO> obtenerCliente(Long clienteId) {
         return webClient.get()
                 .uri("/clientes/{id}", clienteId)
@@ -140,6 +149,10 @@ public class CuentaService {
                 .bodyToMono(ClienteResponseDTO.class)
                 .onErrorResume(WebClientResponseException.NotFound.class,
                         e -> Mono.error(new NotFoundException("No se encontró el cliente con ID: " + clienteId)));
+    }
+
+    private Mono<ClienteResponseDTO> obtenerClienteFallback(Long clienteId, Throwable throwable) {
+        return Mono.error(new ServiceException("No se pudo obtener el cliente con ID: " + clienteId));
     }
 
     /**
@@ -165,5 +178,16 @@ public class CuentaService {
                     return cuentaRepository.save(cuentaOrigen)
                             .then(cuentaRepository.save(cuentaDestino));
                 }).then();
+    }
+
+    public void emitirMovimiento(MovimientoResponseDTO movimiento) {
+        movimientoSink.tryEmitNext(movimiento);
+    }
+
+    public Flux<MovimientoResponseDTO> streamMovimientosByCuenta(Long idCuenta) {
+        return cuentaRepository.findById(idCuenta)
+                .switchIfEmpty(Mono.error(new NotFoundException("No se encontró la cuenta con ID: " + idCuenta)))
+                .flatMapMany(cuenta -> movimientoSink.asFlux()
+                        .filter(movimiento -> cuenta.getIban().equals(movimiento.getIban())));
     }
 }

@@ -34,6 +34,7 @@ public class OperacionMapper implements IMapper<Movimiento, OperacionRequestDTO,
         responseDTO.setTipoMovimiento(entity.getTipo().name());
         responseDTO.setCantidad(entity.getCantidad());
         responseDTO.setFecha(entity.getFecha());
+        responseDTO.setIban(entity.getIban());
         return responseDTO;
     }
 
