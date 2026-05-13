@@ -14,4 +14,5 @@ public class MovimientoResponseDTO {
     private String tipoMovimiento;
     private Double cantidad;
     private LocalDateTime fecha;
+    private String iban;
 }

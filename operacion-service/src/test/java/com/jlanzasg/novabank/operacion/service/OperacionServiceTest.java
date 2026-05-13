@@ -55,6 +55,7 @@ class OperacionServiceTest {
                     .setHeader("Content-Type", "application/json")
                     .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":200.0}"));
             cuentaServer.enqueue(new MockResponse().setResponseCode(200));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(202));
             cuentaServer.start();
 
             OperacionMapper mapper = new OperacionMapper();
@@ -79,7 +80,9 @@ class OperacionServiceTest {
             request.setImporte(100.0);
 
             StepVerifier.create(service.depositar(request))
-                    .expectNextMatches(m -> m.getTipoMovimiento().equals("DEPOSITO") && m.getCantidad().equals(100.0))
+                    .expectNextMatches(m -> m.getTipoMovimiento().equals("DEPOSITO")
+                            && m.getCantidad().equals(100.0)
+                            && m.getIban().equals("ES91210000000000000001"))
                     .verifyComplete();
         }
     }
@@ -152,6 +155,8 @@ class OperacionServiceTest {
                     .setHeader("Content-Type", "application/json")
                     .setBody("{\"iban\":\"ES91210000000000000015\",\"balance\":300.0}"));
             cuentaServer.enqueue(new MockResponse().setResponseCode(200));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(202));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(202));
             cuentaServer.start();
 
             OperacionService service = new OperacionService(
@@ -177,7 +182,9 @@ class OperacionServiceTest {
                             && "TRANSFERENCIA_SALIENTE".equals(list.get(0).getTipoMovimiento())
                             && "TRANSFERENCIA_ENTRANTE".equals(list.get(1).getTipoMovimiento())
                             && list.get(0).getCantidad().equals(100.0)
-                            && list.get(1).getCantidad().equals(120.0))
+                            && list.get(1).getCantidad().equals(120.0)
+                            && list.get(0).getIban().equals("ES91210000000000000001")
+                            && list.get(1).getIban().equals("ES91210000000000000015"))
                     .verifyComplete();
 
             okhttp3.mockwebserver.RecordedRequest saldoRequest = cuentaServer.takeRequest();
