@@ -2,8 +2,8 @@ package com.jlanzasg.novabank.operacion.service;
 
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
 import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaSaldoResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
@@ -15,6 +15,7 @@ import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,7 +23,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import io.micrometer.tracing.Tracer;
 
 import java.time.LocalDateTime;
 
@@ -45,11 +45,29 @@ public class OperacionService {
      *
      * @param operacionRepository the operacion repository
      * @param webClientBuilder    the web client builder
+     * @param exchangeRateClient  the exchange rate client
      * @param operacionMapper     the operacion mapper
      */
+    @Autowired
     public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper) {
         this.operacionRepository = operacionRepository;
         this.webClient = webClientBuilder.baseUrl("http://cuenta-service").build();
+        this.exchangeRateClient = exchangeRateClient;
+        this.operacionMapper = operacionMapper;
+    }
+
+    /**
+     * Instantiates a new Operacion service.
+     *
+     * @param operacionRepository  the operacion repository
+     * @param webClientBuilder     the web client builder
+     * @param exchangeRateClient   the exchange rate client
+     * @param operacionMapper      the operacion mapper
+     * @param cuentaServiceBaseUrl the cuenta service base url
+     */
+    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper, String cuentaServiceBaseUrl) {
+        this.operacionRepository = operacionRepository;
+        this.webClient = webClientBuilder.baseUrl(cuentaServiceBaseUrl).build();
         this.exchangeRateClient = exchangeRateClient;
         this.operacionMapper = operacionMapper;
     }
@@ -123,14 +141,13 @@ public class OperacionService {
             log.info("[TraceID: {}] Iniciando transferencia de {} a {} por valor de {}",
                     traceId, dto.getCuentaOrigen(), dto.getCuentaDestino(), dto.getImporte());
 
-            return Mono.zip(
-                    obtenerCuenta(dto.getCuentaOrigen()),
-                    obtenerCuenta(dto.getCuentaDestino()),
-                    exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
-            ).flatMapMany(tuple -> {
+            return exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
+                    .flatMapMany(tasa -> Mono.zip(
+                            obtenerCuenta(dto.getCuentaOrigen()),
+                            obtenerCuenta(dto.getCuentaDestino())
+                    ).flatMapMany(tuple -> {
                 CuentaResponseDTO cuentaOrigen = tuple.getT1();
                 CuentaResponseDTO cuentaDestino = tuple.getT2();
-                Double tasa = tuple.getT3();
 
                 if (cuentaOrigen.getBalance() < dto.getImporte()) {
                     return Flux.error(new SaldoInsuficienteException("Fondos insuficientes en la cuenta de origen. Balance actual: " + cuentaOrigen.getBalance()));
@@ -155,7 +172,7 @@ public class OperacionService {
                                 guardarMovimiento(dto.getCuentaOrigen(), importeExtraido, TipoMovimiento.TRANSFERENCIA_SALIENTE),
                                 guardarMovimiento(dto.getCuentaDestino(), importeIngresado, TipoMovimiento.TRANSFERENCIA_ENTRANTE)
                         ));
-            });
+            }));
         });
     }
 

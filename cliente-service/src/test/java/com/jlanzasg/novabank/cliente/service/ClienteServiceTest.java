@@ -12,18 +12,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-/**
- * The type Cliente service test.
- */
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
 
@@ -34,94 +33,64 @@ class ClienteServiceTest {
     @InjectMocks
     private ClienteService clienteService;
 
-    /**
-     * Save when dni exists throws duplicate exception.
-     */
     @Test
-    void save_WhenDniExists_ThrowsDuplicateException() {
+    void findById_WhenExists_ReturnsCliente() {
+        Cliente cliente = Cliente.builder()
+                .id(1L)
+                .dni("12345678A")
+                .nombre("Juan")
+                .apellidos("Perez")
+                .email("juan@test.com")
+                .telefono("600000000")
+                .fecha(LocalDateTime.now())
+                .build();
+        ClienteResponseDTO response = new ClienteResponseDTO();
+        response.setId(1L);
+        response.setDni("12345678A");
+
+        when(clienteRepository.findById(1L)).thenReturn(Mono.just(cliente));
+        when(clienteMapper.toResponseDTO(cliente)).thenReturn(response);
+
+        StepVerifier.create(clienteService.findById(1L))
+                .expectNextMatches(dto -> dto.getId().equals(1L) && dto.getDni().equals("12345678A"))
+                .verifyComplete();
+    }
+
+    @Test
+    void findById_WhenMissing_EmitsNotFound() {
+        when(clienteRepository.findById(99L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(clienteService.findById(99L))
+                .expectError(NotFoundException.class)
+                .verify();
+    }
+
+    @Test
+    void save_WhenConflicts_EmitsDuplicateException() {
         ClienteRequestDTO request = new ClienteRequestDTO();
         request.setDni("12345678A");
-        request.setEmail("a@a.com");
+        request.setNombre("Juan");
+        request.setApellidos("Perez");
+        request.setEmail("juan@test.com");
         request.setTelefono("600000000");
 
-        when(clienteRepository.findConflictos(anyString(), anyString(), anyString())).thenReturn(List.of("DNI"));
+        when(clienteRepository.findConflictos("12345678A", "juan@test.com", "600000000"))
+                .thenReturn(Flux.just("DNI"));
 
-        assertThrows(DuplicateException.class, () -> clienteService.save(request));
+        StepVerifier.create(clienteService.save(request))
+                .expectError(DuplicateException.class)
+                .verify();
+
         verify(clienteRepository, never()).save(any(Cliente.class));
     }
 
-    /**
-     * Save when no conflicts saves and returns mapped response.
-     */
     @Test
-    void save_WhenNoConflicts_SavesAndReturnsMappedResponse() {
-        ClienteRequestDTO request = new ClienteRequestDTO();
-        request.setDni("12345678A");
-        request.setEmail("a@a.com");
-        request.setTelefono("600000000");
+    void deleteById_WhenExists_Completes() {
+        Cliente cliente = Cliente.builder().id(3L).dni("12345678A").build();
+        when(clienteRepository.findById(3L)).thenReturn(Mono.just(cliente));
+        when(clienteRepository.delete(cliente)).thenReturn(Mono.empty());
 
-        Cliente entity = Cliente.builder().dni("12345678A").email("a@a.com").telefono("600000000").build();
-        ClienteResponseDTO response = new ClienteResponseDTO();
-        response.setDni("12345678A");
-
-        when(clienteRepository.findConflictos(anyString(), anyString(), anyString())).thenReturn(List.of());
-        when(clienteMapper.toEntity(request)).thenReturn(entity);
-        when(clienteMapper.toResponseDTO(entity)).thenReturn(response);
-
-        ClienteResponseDTO result = clienteService.save(request);
-
-        assertNotNull(result);
-        assertEquals("12345678A", result.getDni());
-        verify(clienteRepository).save(entity);
-    }
-
-    /**
-     * Find by id when not exists throws not found exception.
-     */
-    @Test
-    void findById_WhenNotExists_ThrowsNotFoundException() {
-        when(clienteRepository.findById(44L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> clienteService.findById(44L));
-    }
-
-    /**
-     * Delete by id when exists deletes entity.
-     */
-    @Test
-    void deleteById_WhenExists_DeletesEntity() {
-        when(clienteRepository.existsById(3L)).thenReturn(true);
-
-        clienteService.deleteById(3L);
-
-        verify(clienteRepository).deleteById(3L);
-    }
-
-    /**
-     * Delete by id when not exists throws not found exception.
-     */
-    @Test
-    void deleteById_WhenNotExists_ThrowsNotFoundException() {
-        when(clienteRepository.existsById(77L)).thenReturn(false);
-
-        assertThrows(NotFoundException.class, () -> clienteService.deleteById(77L));
-        verify(clienteRepository, never()).deleteById(anyLong());
-    }
-
-    /**
-     * Find by dni when exists returns mapped response.
-     */
-    @Test
-    void findByDni_WhenExists_ReturnsMappedResponse() {
-        Cliente entity = Cliente.builder().dni("12345678A").nombre("Ana").apellidos("Lopez").email("ana@test.com").telefono("600111222").build();
-        ClienteResponseDTO response = new ClienteResponseDTO();
-        response.setDni("12345678A");
-
-        when(clienteRepository.findByDni("12345678A")).thenReturn(Optional.of(entity));
-        when(clienteMapper.toResponseDTO(entity)).thenReturn(response);
-
-        ClienteResponseDTO result = clienteService.findByDni("12345678a");
-
-        assertEquals("12345678A", result.getDni());
+        StepVerifier.create(clienteService.deleteById(3L))
+                .verifyComplete();
     }
 }
