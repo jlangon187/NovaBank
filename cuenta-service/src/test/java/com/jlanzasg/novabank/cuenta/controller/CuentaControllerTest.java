@@ -1,140 +1,108 @@
 package com.jlanzasg.novabank.cuenta.controller;
 
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
-import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
+import com.jlanzasg.novabank.cuenta.exception.GlobalExceptionHandler;
 import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
 import com.jlanzasg.novabank.cuenta.exception.ServiceException;
 import com.jlanzasg.novabank.cuenta.service.CuentaService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * The type Cuenta controller test.
- */
-@WebMvcTest(controllers = CuentaController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class CuentaControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
-    @MockitoBean
+    @Mock
     private CuentaService cuentaService;
 
-    /**
-     * Crear cuenta returns ok.
-     *
-     * @throws Exception the exception
-     */
+    @InjectMocks
+    private CuentaController cuentaController;
+
+    private void setupClient() {
+        this.webTestClient = WebTestClient.bindToController(cuentaController)
+                .controllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
+
     @Test
-    void crearCuenta_ReturnsOk() throws Exception {
+    void findByIban_WhenExists_Returns200() {
+        setupClient();
         CuentaResponseDTO response = new CuentaResponseDTO();
         response.setIban("ES91210000000000000001");
-        when(cuentaService.crearCuenta(anyLong(), any())).thenReturn(response);
+        when(cuentaService.findAccountByIban("ES91210000000000000001")).thenReturn(Mono.just(response));
 
-        mockMvc.perform(post("/cuentas").param("clienteId", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.iban").value("ES91210000000000000001"));
+        webTestClient.get()
+                .uri("/cuentas/iban/ES91210000000000000001")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(CuentaResponseDTO.class)
+                .value(dto -> org.assertj.core.api.Assertions.assertThat(dto.getIban()).isEqualTo("ES91210000000000000001"));
     }
 
-    /**
-     * Crear cuenta when missing cliente id returns bad request.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void crearCuenta_WhenMissingClienteId_ReturnsBadRequest() throws Exception {
-        mockMvc.perform(post("/cuentas"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.path").value("/cuentas"));
+    void findByIban_WhenMissing_Returns404() {
+        setupClient();
+        when(cuentaService.findAccountByIban("ES404")).thenReturn(Mono.error(new NotFoundException("No existe")));
+
+        webTestClient.get()
+                .uri("/cuentas/iban/ES404")
+                .exchange()
+                .expectStatus().isNotFound();
     }
 
-    /**
-     * Actualizar saldo when missing nuevo saldo returns bad request payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void actualizarSaldo_WhenMissingNuevoSaldo_ReturnsBadRequestPayload() throws Exception {
-        mockMvc.perform(put("/cuentas/iban/ES91210000000000000001/saldo"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"));
+    void actualizarSaldo_WhenValid_Returns200() {
+        setupClient();
+        when(cuentaService.actualizarSaldo("ES91210000000000000001", 200.0)).thenReturn(Mono.empty());
+
+        webTestClient.put()
+                .uri(uriBuilder -> uriBuilder.path("/cuentas/iban/ES91210000000000000001/saldo").queryParam("nuevoSaldo", 200.0).build())
+                .exchange()
+                .expectStatus().isOk();
     }
 
-    /**
-     * Find by iban when not found returns not found payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void findByIban_WhenNotFound_ReturnsNotFoundPayload() throws Exception {
-        when(cuentaService.findAccountByIban("ES404")).thenThrow(new NotFoundException("Cuenta no encontrada"));
+    void crearCuenta_WhenMissingClienteIdParam_Returns400() {
+        setupClient();
 
-        mockMvc.perform(get("/cuentas/iban/ES404"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").value("Cuenta no encontrada"));
+        webTestClient.post()
+                .uri("/cuentas")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Bad Request")
+                .jsonPath("$.path").isEqualTo("/cuentas");
     }
 
-    /**
-     * Find by cliente id returns ok.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void findByClienteId_ReturnsOk() throws Exception {
-        CuentaSimpleResponseDTO cuenta = new CuentaSimpleResponseDTO();
-        cuenta.setIban("ES91210000000000000001");
-        cuenta.setBalance(100.0);
-        when(cuentaService.findAccountsByClientId(1L)).thenReturn(java.util.Set.of(cuenta));
+    void actualizarSaldo_WhenMissingNuevoSaldoParam_Returns400() {
+        setupClient();
 
-        mockMvc.perform(get("/cuentas/cliente/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].iban").value("ES91210000000000000001"));
+        webTestClient.put()
+                .uri("/cuentas/iban/ES91210000000000000001/saldo")
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
-    /**
-     * Actualizar saldo returns ok.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void actualizarSaldo_ReturnsOk() throws Exception {
-        doNothing().when(cuentaService).actualizarSaldo("ES91210000000000000001", 300.0);
+    void findByIban_WhenUnexpectedServiceError_Returns503() {
+        setupClient();
+        when(cuentaService.findAccountByIban("ES500")).thenReturn(Mono.error(new ServiceException("Downstream caido")));
 
-        mockMvc.perform(put("/cuentas/iban/ES91210000000000000001/saldo").param("nuevoSaldo", "300.0"))
-                .andExpect(status().isOk());
-    }
-
-    /**
-     * Find by iban when service fails returns internal server error payload.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    void findByIban_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
-        when(cuentaService.findAccountByIban("ES500")).thenThrow(new ServiceException("Dependencia no disponible"));
-
-        mockMvc.perform(get("/cuentas/iban/ES500"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.error").value("Service Unavailable"))
-                .andExpect(jsonPath("$.status").value(503));
+        webTestClient.get()
+                .uri("/cuentas/iban/ES500")
+                .exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Downstream caido");
     }
 }

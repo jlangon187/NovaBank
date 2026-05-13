@@ -9,6 +9,7 @@ import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
 import com.jlanzasg.novabank.cuenta.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.cuenta.model.Cuenta;
 import com.jlanzasg.novabank.cuenta.repository.CuentaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -34,9 +35,16 @@ public class CuentaService {
      * @param webClientBuilder the web client builder
      * @param cuentaMapper     the cuenta mapper
      */
+    @Autowired
     public CuentaService(CuentaRepository cuentaRepository, WebClient.Builder webClientBuilder, CuentaMapper cuentaMapper) {
         this.cuentaRepository = cuentaRepository;
         this.webClient = webClientBuilder.baseUrl("http://cliente-service").build();
+        this.cuentaMapper = cuentaMapper;
+    }
+
+    public CuentaService(CuentaRepository cuentaRepository, WebClient.Builder webClientBuilder, CuentaMapper cuentaMapper, String clienteServiceBaseUrl) {
+        this.cuentaRepository = cuentaRepository;
+        this.webClient = webClientBuilder.baseUrl(clienteServiceBaseUrl).build();
         this.cuentaMapper = cuentaMapper;
     }
 

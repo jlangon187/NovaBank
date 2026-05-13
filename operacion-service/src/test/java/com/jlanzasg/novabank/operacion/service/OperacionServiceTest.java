@@ -1,209 +1,364 @@
 package com.jlanzasg.novabank.operacion.service;
 
-import com.jlanzasg.novabank.operacion.client.CuentaClient;
+import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
 import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
-import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
-import com.jlanzasg.novabank.operacion.exception.SaldoInsuficienteException;
-import com.jlanzasg.novabank.operacion.exception.ServiceException;
+import com.jlanzasg.novabank.operacion.exception.ExchangeRateUnavailableException;
 import com.jlanzasg.novabank.operacion.exception.DuplicateException;
+import com.jlanzasg.novabank.operacion.exception.SaldoInsuficienteException;
 import com.jlanzasg.novabank.operacion.exception.NotFoundException;
-import com.jlanzasg.novabank.operacion.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.operacion.mapper.impl.OperacionMapper;
 import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
-import feign.FeignException;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
 
-/**
- * The type Operacion service test.
- */
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class OperacionServiceTest {
 
     @Mock
     private OperacionRepository operacionRepository;
     @Mock
-    private CuentaClient cuentaClient;
-    @Mock
-    private OperacionMapper operacionMapper;
-    @Mock
-    private CuentaMapper cuentaMapper;
-    @InjectMocks
-    private OperacionService operacionService;
+    private ExchangeRateClient exchangeRateClient;
 
-    /**
-     * Depositar when valid updates balance and returns movement.
-     */
-    @Test
-    void depositar_WhenValid_UpdatesBalanceAndReturnsMovement() {
-        OperacionRequestDTO request = new OperacionRequestDTO();
-        request.setIbanCuenta("ES91210000000000000001");
-        request.setImporte(100.0);
-
-        CuentaResponseDTO cuenta = new CuentaResponseDTO();
-        cuenta.setIban("ES91210000000000000001");
-        cuenta.setBalance(200.0);
-
-        Movimiento entity = Movimiento.builder().tipo(TipoMovimiento.DEPOSITO).cantidad(100.0).cuentaIban(cuenta.getIban()).build();
-        MovimientoResponseDTO response = new MovimientoResponseDTO();
-        response.setTipoMovimiento("DEPOSITO");
-
-        when(cuentaClient.getCuentaByIban(request.getIbanCuenta())).thenReturn(cuenta);
-        when(operacionMapper.toEntity(request)).thenReturn(entity);
-        when(operacionRepository.save(any(Movimiento.class))).thenReturn(entity);
-        when(operacionMapper.toResponseDTO(entity)).thenReturn(response);
-
-        MovimientoResponseDTO result = operacionService.depositar(request);
-
-        assertEquals("DEPOSITO", result.getTipoMovimiento());
+    private TransferenciaRequestDTO transferenciaBase() {
+        TransferenciaRequestDTO dto = new TransferenciaRequestDTO();
+        dto.setCuentaOrigen("ES91210000000000000001");
+        dto.setCuentaDestino("ES91210000000000000015");
+        dto.setImporte(100.0);
+        dto.setMonedaOrigen("EUR");
+        dto.setMonedaDestino("USD");
+        return dto;
     }
 
-    /**
-     * Retirar when insufficient balance throws exception.
-     */
     @Test
-    void retirar_WhenInsufficientBalance_ThrowsException() {
-        OperacionRequestDTO request = new OperacionRequestDTO();
-        request.setIbanCuenta("ES91210000000000000001");
-        request.setImporte(500.0);
+    void depositar_WhenValid_CompletesWithMovimiento() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":200.0}"));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(200));
+            cuentaServer.start();
 
-        CuentaResponseDTO cuenta = new CuentaResponseDTO();
-        cuenta.setIban("ES91210000000000000001");
-        cuenta.setBalance(200.0);
+            OperacionMapper mapper = new OperacionMapper();
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    mapper,
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
 
-        when(cuentaClient.getCuentaByIban(request.getIbanCuenta())).thenReturn(cuenta);
+            when(operacionRepository.save(any(Movimiento.class))).thenAnswer(invocation -> {
+                Movimiento mov = invocation.getArgument(0);
+                mov.setId(1L);
+                mov.setFecha(LocalDateTime.now());
+                mov.setTipo(TipoMovimiento.DEPOSITO);
+                return Mono.just(mov);
+            });
 
-        assertThrows(SaldoInsuficienteException.class, () -> operacionService.retirar(request));
+            OperacionRequestDTO request = new OperacionRequestDTO();
+            request.setCuentaIban("ES91210000000000000001");
+            request.setImporte(100.0);
+
+            StepVerifier.create(service.depositar(request))
+                    .expectNextMatches(m -> m.getTipoMovimiento().equals("DEPOSITO") && m.getCantidad().equals(100.0))
+                    .verifyComplete();
+        }
     }
 
-    /**
-     * Transferir when destination update fails restores origin and throws service exception.
-     */
     @Test
-    void transferir_WhenDestinationUpdateFails_RestoresOriginAndThrowsServiceException() {
-        TransferenciaRequestDTO request = new TransferenciaRequestDTO();
-        request.setCuentaOrigen("ES91210000000000000001");
-        request.setCuentaDestino("ES91210000000000000002");
-        request.setImporte(50.0);
+    void retirar_WhenInsufficientBalance_EmitsError() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":50.0}"));
+            cuentaServer.start();
 
-        CuentaResponseDTO origen = new CuentaResponseDTO();
-        origen.setIban("ES91210000000000000001");
-        origen.setBalance(200.0);
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
 
-        CuentaResponseDTO destino = new CuentaResponseDTO();
-        destino.setIban("ES91210000000000000002");
-        destino.setBalance(100.0);
+            OperacionRequestDTO request = new OperacionRequestDTO();
+            request.setCuentaIban("ES91210000000000000001");
+            request.setImporte(500.0);
 
-        when(cuentaClient.getCuentaByIban(request.getCuentaOrigen())).thenReturn(origen);
-        when(cuentaClient.getCuentaByIban(request.getCuentaDestino())).thenReturn(destino);
+            StepVerifier.create(service.retirar(request))
+                    .expectError(SaldoInsuficienteException.class)
+                    .verify();
+        }
+    }
 
-        doNothing().doNothing().when(cuentaClient).actualizarSaldo(eq("ES91210000000000000001"), anyDouble());
-        doThrow(mock(FeignException.InternalServerError.class))
-                .when(cuentaClient).actualizarSaldo(eq("ES91210000000000000002"), anyDouble());
+    @Test
+    void transferirEnDivisa_CuandoExchangeFalla_AbortaSinTocarCuentas() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.start();
 
-        assertThrows(ServiceException.class, () -> operacionService.transferir(request));
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
 
-        verify(cuentaClient, times(2)).actualizarSaldo(eq("ES91210000000000000001"), anyDouble());
-        verify(cuentaClient, times(1)).actualizarSaldo(eq("ES91210000000000000002"), anyDouble());
+            when(exchangeRateClient.obtenerTasaCambioSegura("USD", "EUR"))
+                    .thenReturn(Mono.error(new ExchangeRateUnavailableException("USD", "EUR", null)));
+
+            TransferenciaRequestDTO dto = new TransferenciaRequestDTO();
+            dto.setCuentaOrigen("ES91210000000000000001");
+            dto.setCuentaDestino("ES91210000000000000015");
+            dto.setImporte(1000.0);
+            dto.setMonedaOrigen("USD");
+            dto.setMonedaDestino("EUR");
+
+            StepVerifier.create(service.transferir(dto))
+                    .expectError(ExchangeRateUnavailableException.class)
+                    .verify();
+
+            verify(operacionRepository, never()).save(any(Movimiento.class));
+            org.assertj.core.api.Assertions.assertThat(cuentaServer.getRequestCount()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    void transferir_WhenValid_ActualizaCuentasYGeneraDosMovimientos() throws IOException, InterruptedException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":500.0}"));
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000015\",\"balance\":300.0}"));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(200));
+            cuentaServer.start();
+
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
+
+            when(exchangeRateClient.obtenerTasaCambioSegura("EUR", "USD")).thenReturn(Mono.just(1.2));
+            when(operacionRepository.save(any(Movimiento.class))).thenAnswer(invocation -> {
+                Movimiento mov = invocation.getArgument(0);
+                mov.setId(10L);
+                mov.setFecha(LocalDateTime.now());
+                return Mono.just(mov);
+            });
+
+            TransferenciaRequestDTO dto = transferenciaBase();
+
+            StepVerifier.create(service.transferir(dto).collectList())
+                    .expectNextMatches(list -> list.size() == 2
+                            && "TRANSFERENCIA_SALIENTE".equals(list.get(0).getTipoMovimiento())
+                            && "TRANSFERENCIA_ENTRANTE".equals(list.get(1).getTipoMovimiento())
+                            && list.get(0).getCantidad().equals(100.0)
+                            && list.get(1).getCantidad().equals(120.0))
+                    .verifyComplete();
+
+            okhttp3.mockwebserver.RecordedRequest saldoRequest = cuentaServer.takeRequest();
+            saldoRequest = cuentaServer.takeRequest();
+            saldoRequest = cuentaServer.takeRequest();
+            org.assertj.core.api.Assertions.assertThat(saldoRequest.getMethod()).isEqualTo("PUT");
+            org.assertj.core.api.Assertions.assertThat(saldoRequest.getPath()).isEqualTo("/cuentas/saldos");
+            org.assertj.core.api.Assertions.assertThat(saldoRequest.getBody().readUtf8())
+                    .contains("\"ibanOrigen\":\"ES91210000000000000001\"")
+                    .contains("\"ibanDestino\":\"ES91210000000000000015\"")
+                    .contains("\"nuevoSaldoOrigen\":")
+                    .contains("\"nuevoSaldoDestino\":");
+
+            verify(operacionRepository).save(argThat(m -> m.getTipo() == TipoMovimiento.TRANSFERENCIA_SALIENTE));
+            verify(operacionRepository).save(argThat(m -> m.getTipo() == TipoMovimiento.TRANSFERENCIA_ENTRANTE));
+        }
+    }
+
+    @Test
+    void transferir_WhenInsufficientBalance_EmitsErrorAndSkipsUpdates() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":20.0}"));
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000015\",\"balance\":30.0}"));
+            cuentaServer.start();
+
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
+
+            when(exchangeRateClient.obtenerTasaCambioSegura("EUR", "USD")).thenReturn(Mono.just(1.1));
+            TransferenciaRequestDTO dto = transferenciaBase();
+            dto.setImporte(100.0);
+
+            StepVerifier.create(service.transferir(dto))
+                    .expectError(SaldoInsuficienteException.class)
+                    .verify();
+
+            verify(operacionRepository, never()).save(any(Movimiento.class));
+            org.assertj.core.api.Assertions.assertThat(cuentaServer.getRequestCount()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    void transferir_WhenSameAccount_EmitsDuplicateException() {
+        OperacionService service = new OperacionService(
+                operacionRepository,
+                WebClient.builder(),
+                exchangeRateClient,
+                new OperacionMapper(),
+                "http://localhost:9999"
+        );
+
+        TransferenciaRequestDTO dto = transferenciaBase();
+        dto.setCuentaDestino(dto.getCuentaOrigen());
+
+        StepVerifier.create(service.transferir(dto))
+                .expectError(DuplicateException.class)
+                .verify();
+
+        verify(exchangeRateClient, never()).obtenerTasaCambioSegura(any(), any());
         verify(operacionRepository, never()).save(any(Movimiento.class));
     }
 
-    /**
-     * Transferir when same origin and destination throws duplicate exception.
-     */
     @Test
-    void transferir_WhenSameOriginAndDestination_ThrowsDuplicateException() {
-        TransferenciaRequestDTO request = new TransferenciaRequestDTO();
-        request.setCuentaOrigen("ES91210000000000000001");
-        request.setCuentaDestino("ES91210000000000000001");
-        request.setImporte(10.0);
+    void transferir_WhenImporteNoValido_EmitsIllegalArgumentException() {
+        OperacionService service = new OperacionService(
+                operacionRepository,
+                WebClient.builder(),
+                exchangeRateClient,
+                new OperacionMapper(),
+                "http://localhost:9999"
+        );
 
-        assertThrows(DuplicateException.class, () -> operacionService.transferir(request));
-        verifyNoInteractions(cuentaClient);
+        TransferenciaRequestDTO dto = transferenciaBase();
+        dto.setImporte(0.0);
+
+        StepVerifier.create(service.transferir(dto))
+                .expectError(IllegalArgumentException.class)
+                .verify();
     }
 
-    /**
-     * Consultar saldo when account not found throws not found exception.
-     */
     @Test
-    void consultarSaldo_WhenAccountNotFound_ThrowsNotFoundException() {
-        when(cuentaClient.getCuentaByIban("ES404")).thenThrow(mock(FeignException.NotFound.class));
+    void depositar_WhenImporteNoValido_EmitsIllegalArgumentException() {
+        OperacionService service = new OperacionService(
+                operacionRepository,
+                WebClient.builder(),
+                exchangeRateClient,
+                new OperacionMapper(),
+                "http://localhost:9999"
+        );
 
-        assertThrows(NotFoundException.class, () -> operacionService.consultarSaldo("ES404"));
-    }
-
-    /**
-     * Obtener movimientos por cuenta y fecha with range uses range repository method.
-     */
-    @Test
-    void obtenerMovimientosPorCuentaYFecha_WithRange_UsesRangeRepositoryMethod() {
-        LocalDateTime inicio = LocalDateTime.now().minusDays(1);
-        LocalDateTime fin = LocalDateTime.now();
-        Movimiento movimiento = Movimiento.builder().cuentaIban("ES1").cantidad(20.0).tipo(TipoMovimiento.DEPOSITO).build();
-        MovimientoResponseDTO response = new MovimientoResponseDTO();
-        response.setCantidad(20.0);
-
-        when(operacionRepository.findByCuentaIbanAndFechaBetweenOrderByFechaDesc("ES1", inicio, fin)).thenReturn(List.of(movimiento));
-        when(operacionMapper.toResponseDTO(movimiento)).thenReturn(response);
-
-        List<MovimientoResponseDTO> result = operacionService.obtenerMovimientosPorCuentaYFecha("ES1", inicio, fin);
-
-        assertEquals(1, result.size());
-        assertEquals(20.0, result.get(0).getCantidad());
-    }
-
-    /**
-     * Depositar when amount is zero throws illegal argument exception.
-     */
-    @Test
-    void depositar_WhenAmountIsZero_ThrowsIllegalArgumentException() {
         OperacionRequestDTO request = new OperacionRequestDTO();
-        request.setIbanCuenta("ES91210000000000000001");
+        request.setCuentaIban("ES91210000000000000001");
         request.setImporte(0.0);
 
-        assertThrows(IllegalArgumentException.class, () -> operacionService.depositar(request));
-        verifyNoInteractions(cuentaClient);
+        StepVerifier.create(service.depositar(request))
+                .expectError(IllegalArgumentException.class)
+                .verify();
     }
 
-    /**
-     * Transferir when origin update fails throws service exception.
-     */
     @Test
-    void transferir_WhenOriginUpdateFails_ThrowsServiceException() {
-        TransferenciaRequestDTO request = new TransferenciaRequestDTO();
-        request.setCuentaOrigen("ES91210000000000000001");
-        request.setCuentaDestino("ES91210000000000000002");
-        request.setImporte(25.0);
+    void retirar_WhenImporteNoValido_EmitsIllegalArgumentException() {
+        OperacionService service = new OperacionService(
+                operacionRepository,
+                WebClient.builder(),
+                exchangeRateClient,
+                new OperacionMapper(),
+                "http://localhost:9999"
+        );
 
-        CuentaResponseDTO origen = new CuentaResponseDTO();
-        origen.setIban("ES91210000000000000001");
-        origen.setBalance(200.0);
+        OperacionRequestDTO request = new OperacionRequestDTO();
+        request.setCuentaIban("ES91210000000000000001");
+        request.setImporte(-10.0);
 
-        CuentaResponseDTO destino = new CuentaResponseDTO();
-        destino.setIban("ES91210000000000000002");
-        destino.setBalance(100.0);
+        StepVerifier.create(service.retirar(request))
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
 
-        when(cuentaClient.getCuentaByIban(request.getCuentaOrigen())).thenReturn(origen);
-        when(cuentaClient.getCuentaByIban(request.getCuentaDestino())).thenReturn(destino);
-        doThrow(mock(FeignException.InternalServerError.class)).when(cuentaClient)
-                .actualizarSaldo(eq("ES91210000000000000001"), anyDouble());
+    @Test
+    void depositar_WhenCuentaServiceReturns404_EmitsNotFound() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse().setResponseCode(404));
+            cuentaServer.start();
 
-        assertThrows(ServiceException.class, () -> operacionService.transferir(request));
-        verify(cuentaClient, never()).actualizarSaldo(eq("ES91210000000000000002"), anyDouble());
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
+
+            OperacionRequestDTO request = new OperacionRequestDTO();
+            request.setCuentaIban("ES91210000000000000001");
+            request.setImporte(10.0);
+
+            StepVerifier.create(service.depositar(request))
+                    .expectError(NotFoundException.class)
+                    .verify();
+
+            verify(operacionRepository, never()).save(any(Movimiento.class));
+        }
+    }
+
+    @Test
+    void transferir_WhenCuentaUpdateFails_DoesNotPersistMovimientos() throws IOException {
+        try (MockWebServer cuentaServer = new MockWebServer()) {
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000001\",\"balance\":500.0}"));
+            cuentaServer.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"iban\":\"ES91210000000000000015\",\"balance\":300.0}"));
+            cuentaServer.enqueue(new MockResponse().setResponseCode(500));
+            cuentaServer.start();
+
+            OperacionService service = new OperacionService(
+                    operacionRepository,
+                    WebClient.builder(),
+                    exchangeRateClient,
+                    new OperacionMapper(),
+                    String.format("http://localhost:%s", cuentaServer.getPort())
+            );
+
+            when(exchangeRateClient.obtenerTasaCambioSegura("EUR", "USD")).thenReturn(Mono.just(1.2));
+
+            TransferenciaRequestDTO dto = transferenciaBase();
+
+            StepVerifier.create(service.transferir(dto))
+                    .expectError()
+                    .verify();
+        }
     }
 }

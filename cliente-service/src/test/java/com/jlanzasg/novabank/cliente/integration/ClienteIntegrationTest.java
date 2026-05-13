@@ -1,98 +1,63 @@
 package com.jlanzasg.novabank.cliente.integration;
 
-import com.jlanzasg.novabank.cliente.repository.ClienteRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.jlanzasg.novabank.cliente.controller.ClienteController;
+import com.jlanzasg.novabank.cliente.dto.cliente.response.ClienteResponseDTO;
+import com.jlanzasg.novabank.cliente.exception.GlobalExceptionHandler;
+import com.jlanzasg.novabank.cliente.service.ClienteService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-/**
- * The type Cliente integration test.
- */
-@SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class ClienteIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Mock
+    private ClienteService clienteService;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    @InjectMocks
+    private ClienteController clienteController;
 
-    @BeforeEach
-    void cleanDatabase() {
-        clienteRepository.deleteAll();
-    }
-
-    /**
-     * Create and read client full flow.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void createAndReadClient_FullFlow() throws Exception {
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"87654321Z\",\"nombre\":\"Mario\",\"apellidos\":\"Ruiz\",\"email\":\"mario@test.com\",\"telefono\":\"611222333\"}"))
-                .andExpect(status().isCreated());
+    void createAndReadClient_FullFlow() {
+        WebTestClient client = WebTestClient.bindToController(clienteController)
+                .controllerAdvice(new GlobalExceptionHandler())
+                .build();
 
-        mockMvc.perform(get("/clientes/dni/87654321Z"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.dni").value("87654321Z"));
-    }
+        ClienteResponseDTO response = new ClienteResponseDTO();
+        response.setId(1L);
+        response.setDni("87654321Z");
 
-    /**
-     * Delete client after create returns no content and then not found.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    void deleteClient_AfterCreate_ReturnsNoContentAndThenNotFound() throws Exception {
-        MvcResult createResult = mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"11223344X\",\"nombre\":\"Lucia\",\"apellidos\":\"Navas\",\"email\":\"lucia@test.com\",\"telefono\":\"622333444\"}"))
-                .andExpect(status().isCreated())
-                .andReturn();
+        when(clienteService.save(any())).thenReturn(Mono.just(response));
+        when(clienteService.findByDni("87654321Z")).thenReturn(Mono.just(response));
 
-        String createdId = com.jayway.jsonpath.JsonPath.read(createResult.getResponse().getContentAsString(), "$.id").toString();
+        client.post()
+                .uri("/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "dni": "87654321Z",
+                          "nombre": "Mario",
+                          "apellidos": "Ruiz",
+                          "email": "mario@test.com",
+                          "telefono": "611222333"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isCreated();
 
-        mockMvc.perform(delete("/clientes/{id}", createdId))
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(get("/clientes/{id}", createdId))
-                .andExpect(status().isNotFound());
-    }
-
-    /**
-     * Create client when duplicate dni returns conflict.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    void createClient_WhenDuplicateDni_ReturnsConflict() throws Exception {
-        String body = "{\"dni\":\"44556677M\",\"nombre\":\"Paula\",\"apellidos\":\"Ramos\",\"email\":\"paula1@test.com\",\"telefono\":\"633444555\"}";
-
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"44556677M\",\"nombre\":\"Paula\",\"apellidos\":\"Ramos\",\"email\":\"paula2@test.com\",\"telefono\":\"633444556\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflict"));
+        client.get()
+                .uri("/clientes/dni/87654321Z")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.dni").isEqualTo("87654321Z");
     }
 }

@@ -3,6 +3,7 @@ package com.jlanzasg.novabank.operacion.client;
 import com.jlanzasg.novabank.operacion.exception.ExchangeRateUnavailableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -13,8 +14,13 @@ public class ExchangeRateClient {
 
     private final WebClient exchangeWebClient;
 
+    @Autowired
     public ExchangeRateClient(WebClient.Builder webClientBuilder) {
         this.exchangeWebClient = webClientBuilder.clone().baseUrl("http://exchange-rate-mock-service").build();
+    }
+
+    public ExchangeRateClient(WebClient.Builder webClientBuilder, String baseUrl) {
+        this.exchangeWebClient = webClientBuilder.clone().baseUrl(baseUrl).build();
     }
 
     @CircuitBreaker(name = "exchange-service", fallbackMethod = "fallbackExchangeRate")

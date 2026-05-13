@@ -34,12 +34,12 @@ public interface ClienteRepository extends ReactiveCrudRepository<Cliente, Long>
      * @return the list
      */
     @Query("SELECT CASE " +
-            "WHEN dni = :dni THEN 'DNI' " +
-            "WHEN email = :email THEN 'EMAIL' " +
-            "WHEN telefono = :telefono THEN 'TELEFONO' " +
+            "WHEN \"DNI\" = :dni THEN 'DNI' " +
+            "WHEN \"EMAIL\" = :email THEN 'EMAIL' " +
+            "WHEN \"TELEFONO\" = :telefono THEN 'TELEFONO' " +
             "ELSE 'UNKNOWN' END " +
-            "FROM clientes " +
-            "WHERE dni = :dni OR email = :email OR telefono = :telefono")
+            "FROM \"clientes\" " +
+            "WHERE \"DNI\" = :dni OR \"EMAIL\" = :email OR \"TELEFONO\" = :telefono")
     Flux<String> findConflictos(
             @Param("dni") String dni,
             @Param("email") String email,
