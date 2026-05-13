@@ -1,296 +1,177 @@
 package com.jlanzasg.novabank.cliente.exception;
 
-
 import com.jlanzasg.novabank.cliente.dto.error.ErrorResponseDTO;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebInputException;
+import reactor.core.publisher.Mono;
+
+import java.util.stream.Collectors;
 
 /**
- * Clase para manejar excepciones globalmente en la aplicación. Utiliza @RestControllerAdvice para interceptar excepciones
- * lanzadas por los controladores y devolver respuestas HTTP adecuadas con mensajes de error personalizados.
- * Esto permite centralizar el manejo de errores y mantener la API consistente y fácil de depurar,
- * evitando que se expongan detalles internos de la aplicación al cliente.
- * Cada método maneja un tipo específico de excepción y devuelve un ErrorResponseDTO
- * con información relevante sobre el error ocurrido.
+ * The type Global exception handler.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Maneja la excepción cuando se intenta duplicar un registro (DNI ya existe).
-     * Devuelve un estado 409 CONFLICT.
+     * Handle duplicate exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
     @ExceptionHandler(DuplicateException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDuplicateException(DuplicateException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleDuplicateException(DuplicateException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
-
     /**
-     * Handle saldo insuficiente exception response entity.
+     * Handle saldo insuficiente exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
     @ExceptionHandler(SaldoInsuficienteException.class)
-    public ResponseEntity<ErrorResponseDTO> handleSaldoInsuficienteException(SaldoInsuficienteException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleSaldoInsuficienteException(SaldoInsuficienteException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
     /**
-     * Maneja la excepción cuando no se encuentra un registro.
-     * Devuelve un estado 404 NOT FOUND.
+     * Handle not found exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNotFoundException(NotFoundException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleNotFoundException(NotFoundException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage(), request);
     }
 
     /**
-     * Maneja cualquier otra excepción no controlada (El clásico 500).
-     * Así evitamos que la aplicación devuelva todo el rastro de la pila (stack trace) al cliente,
-     * manteniendo la API segura.
+     * Handle validation exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGlobalException(Exception ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("Ocurrió un error inesperado en el servidor" +  ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleValidationException(WebExchangeBindException ex, ServerHttpRequest request) {
+        String mensajes = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(". "));
+        return buildError(HttpStatus.BAD_REQUEST, "Bad Request", mensajes, request);
     }
 
     /**
-     * Maneja errores de validación (@Valid).
-     * Extrae los mensajes de error de los campos fallidos.
+     * Handle server web input exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
-    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDTO> handleValidationException
-    (org.springframework.web.bind.MethodArgumentNotValidException ex, HttpServletRequest request) {
-        StringBuilder mensajes = new StringBuilder();
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            mensajes.append(error.getField()).append(": ").append(error.getDefaultMessage()).append(". ");
-        });
-
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(mensajes.toString().trim())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(ServerWebInputException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleServerWebInputException(ServerWebInputException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, "Bad Request", "Error en la solicitud: " + ex.getReason(), request);
     }
 
     /**
-     * Handle missing servlet request parameter exception response entity.
+     * Handle response status exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponseDTO> handleMissingServletRequestParameterException(
-            MissingServletRequestParameterException ex,
-            HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(ResponseStatusException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleResponseStatusException(ResponseStatusException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.valueOf(ex.getStatusCode().value()), ex.getStatusCode().toString(), ex.getReason() != null ? ex.getReason() : "Error en la petición", request);
     }
 
     /**
-     * Handle method argument type mismatch exception response entity.
+     * Handle web client exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponseDTO> handleMethodArgumentTypeMismatchException(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("Parámetro inválido: " + ex.getName())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(WebClientResponseException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleWebClientException(WebClientResponseException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.valueOf(ex.getStatusCode().value()), "WebClient Error", "Error al comunicarse con otro microservicio: " + ex.getStatusText(), request);
     }
 
     /**
-     * Maneja la excepción cuando se accede a una URL que no existe (404).
+     * Handle service exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(NoHandlerFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message("La URL solicitada no existe: " + ex.getRequestURL())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
-    /**
-     * Maneja la excepción cuando se accede a un recurso estático que no existe (404).
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message("La ruta o el recurso no existe. Verifique la URL y vuelva a intentarlo.")
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
-    /**
-     * Maneja la excepción cuando el usuario no tiene permisos para acceder a un recurso (403).
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAccessDeniedException(
-            org.springframework.security.access.AccessDeniedException ex,
-            HttpServletRequest request) {
-
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.FORBIDDEN.value())
-                .error("Forbidden")
-                .message("No tienes permisos para acceder a este recurso.")
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
-    }
-
-    /**
-     * Handle authentication exception response entity.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
-     */
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error("Unauthorized")
-                .message("Credenciales incorrectas o autenticación inválida.")
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
-    }
-
-    /**
-     * Handle service exception response entity.
-     *
-     * @param ex      the ex
-     * @param request the request
-     * @return the response entity
+     * @return the mono
      */
     @ExceptionHandler(ServiceException.class)
-    public ResponseEntity<ErrorResponseDTO> handleServiceException(ServiceException ex, HttpServletRequest request) {
-
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
-                .error("Service Unavailable")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleServiceException(ServiceException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", ex.getMessage(), request);
     }
 
     /**
-     * Handle feign exception response entity.
+     * Handle access denied exception mono.
      *
      * @param ex      the ex
      * @param request the request
-     * @return the response entity
+     * @return the mono
      */
-    @ExceptionHandler(feign.FeignException.class)
-    public ResponseEntity<ErrorResponseDTO> handleFeignException(Exception ex, HttpServletRequest request) {
-        feign.FeignException feignEx = (feign.FeignException) ex;
-        HttpStatus status = HttpStatus.resolve(feignEx.status());
-        if (status == null || feignEx.status() <= 0) {
-            status = HttpStatus.SERVICE_UNAVAILABLE;
-        }
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, "Forbidden", "No tienes permisos para acceder a este recurso.", request);
+    }
 
+    /**
+     * Handle authentication exception mono.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the mono
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleAuthenticationException(AuthenticationException ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.UNAUTHORIZED, "Unauthorized", "Credenciales incorrectas o autenticación inválida.", request);
+    }
+
+    /**
+     * Handle global exception mono.
+     *
+     * @param ex      the ex
+     * @param request the request
+     * @return the mono
+     */
+    @ExceptionHandler(Exception.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleGlobalException(Exception ex, ServerHttpRequest request) {
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Ocurrió un error inesperado en el servidor: " + ex.getMessage(), request);
+    }
+
+    /**
+     * Construye la respuesta de error estándar.
+     *
+     * @param status
+     * @param error
+     * @param message
+     * @param request
+     * @return
+     */
+    private Mono<ResponseEntity<ErrorResponseDTO>> buildError(HttpStatus status, String error, String message, ServerHttpRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                 .status(status.value())
-                .error(status == HttpStatus.SERVICE_UNAVAILABLE ? "Service Unavailable" : "Feign Client Error")
-                .message("Error de red: " + feignEx.getMessage())
-                .path(request.getRequestURI())
+                .error(error)
+                .message(message)
+                .path(request.getPath().value())
                 .build();
-
-        return new ResponseEntity<>(errorResponse, status);
+        return Mono.just(new ResponseEntity<>(errorResponse, status));
     }
 }

@@ -2,13 +2,17 @@ package com.jlanzasg.novabank.cliente;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 
 /**
  * The type Cliente service application.
  */
+@EnableCaching
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableR2dbcAuditing
 public class ClienteServiceApplication {
     /**
      * The entry point of application.

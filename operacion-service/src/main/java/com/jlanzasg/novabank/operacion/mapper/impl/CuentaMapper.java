@@ -1,7 +1,7 @@
 package com.jlanzasg.novabank.operacion.mapper.impl;
 
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaSaldoResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;

@@ -1,15 +1,15 @@
 package com.jlanzasg.novabank.operacion.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
-
-import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * The type Movimiento.
@@ -19,25 +19,14 @@ import org.hibernate.annotations.CreationTimestamp;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
 @Table(name = "movimientos")
 public class Movimiento {
 
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-
-        @Column(name = "cuenta_iban", nullable = false)
-        private String cuentaIban;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "tipo", nullable = false)
+        private String iban;
         private TipoMovimiento tipo;
-
-        @Column(name = "cantidad", nullable = false)
         private Double cantidad;
-
-        @CreationTimestamp
-        @Column(name = "fecha", updatable = false)
+        @CreatedDate
         private LocalDateTime fecha;
 }
