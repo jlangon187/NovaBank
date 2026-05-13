@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.cuenta.controller;
 
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.cuenta.exception.GlobalExceptionHandler;
 import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
 import com.jlanzasg.novabank.cuenta.exception.ServiceException;
@@ -11,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -104,5 +106,31 @@ class CuentaControllerTest {
                 .expectStatus().isEqualTo(503)
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Downstream caido");
+    }
+
+    @Test
+    void findByClienteId_WhenClienteMissing_Returns404() {
+        setupClient();
+        when(cuentaService.findAccountsByClientId(99L)).thenReturn(Flux.error(new NotFoundException("No se encontró el cliente con ID: 99")));
+
+        webTestClient.get()
+                .uri("/cuentas/cliente/99")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("No se encontró el cliente con ID: 99");
+    }
+
+    @Test
+    void findByClienteId_WhenClienteExistsWithoutAccounts_ReturnsEmptyList() {
+        setupClient();
+        when(cuentaService.findAccountsByClientId(1L)).thenReturn(Flux.empty());
+
+        webTestClient.get()
+                .uri("/cuentas/cliente/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(CuentaSimpleResponseDTO.class)
+                .hasSize(0);
     }
 }
