@@ -1,139 +1,244 @@
 package com.jlanzasg.novabank.cuenta.service;
 
-import com.jlanzasg.novabank.cuenta.client.ClienteClient;
 import com.jlanzasg.novabank.cuenta.dto.cliente.response.ClienteResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
 import com.jlanzasg.novabank.cuenta.exception.NotFoundException;
-import com.jlanzasg.novabank.cuenta.exception.ServiceException;
 import com.jlanzasg.novabank.cuenta.mapper.impl.CuentaMapper;
 import com.jlanzasg.novabank.cuenta.model.Cuenta;
 import com.jlanzasg.novabank.cuenta.repository.CuentaRepository;
-import feign.FeignException;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import java.util.Optional;
-import java.util.Set;
+import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-/**
- * The type Cuenta service test.
- */
 @ExtendWith(MockitoExtension.class)
 class CuentaServiceTest {
 
     @Mock
     private CuentaRepository cuentaRepository;
-    @Mock
-    private ClienteClient clienteClient;
+
     @Mock
     private CuentaMapper cuentaMapper;
-    @InjectMocks
+
     private CuentaService cuentaService;
 
-    /**
-     * Crear cuenta when cliente exists returns response.
-     */
-    @Test
-    void crearCuenta_WhenClienteExists_ReturnsResponse() {
-        ClienteResponseDTO cliente = new ClienteResponseDTO();
-        cliente.setId(1L);
-        cliente.setNombre("Ana");
-        cliente.setApellidos("Lopez");
+    @Mock
+    private WebClient.Builder webClientBuilder;
 
-        Cuenta cuenta = Cuenta.builder().id(1L).iban("ES91210000000000000001").clienteId(1L).balance(0.0).build();
-        CuentaResponseDTO response = new CuentaResponseDTO();
-        response.setIban("ES91210000000000000001");
-
-        when(clienteClient.getClienteById(1L)).thenReturn(cliente);
-        when(cuentaRepository.obtenerUltimoId()).thenReturn(Optional.of(0L));
-        when(cuentaRepository.save(any(Cuenta.class))).thenReturn(cuenta);
-        when(cuentaMapper.toResponseDTO(any(Cuenta.class), any(ClienteResponseDTO.class))).thenReturn(response);
-
-        CuentaResponseDTO result = cuentaService.crearCuenta(1L, null);
-
-        assertNotNull(result);
-        assertEquals("ES91210000000000000001", result.getIban());
+    @BeforeEach
+    void setUp() {
+        WebClient webClient = WebClient.builder().build();
+        when(webClientBuilder.baseUrl("http://cliente-service")).thenReturn(webClientBuilder);
+        when(webClientBuilder.build()).thenReturn(webClient);
+        cuentaService = new CuentaService(cuentaRepository, webClientBuilder, cuentaMapper);
     }
 
-    /**
-     * Crear cuenta when cliente not found throws not found exception.
-     */
     @Test
-    void crearCuenta_WhenClienteNotFound_ThrowsNotFoundException() {
-        when(clienteClient.getClienteById(9L)).thenThrow(mock(FeignException.NotFound.class));
+    void findAccountsByClientId_WhenExists_ReturnsFlux() {
+        Cuenta cuenta = Cuenta.builder().id(1L).iban("ES91210000000000000001").balance(100.0).clienteId(1L).build();
+        CuentaSimpleResponseDTO dto = new CuentaSimpleResponseDTO();
+        dto.setIban("ES91210000000000000001");
 
-        assertThrows(NotFoundException.class, () -> cuentaService.crearCuenta(9L, null));
+        when(cuentaRepository.findAllByClienteId(1L)).thenReturn(Flux.just(cuenta));
+        when(cuentaMapper.toSimpleResponseDTO(cuenta)).thenReturn(dto);
+
+        StepVerifier.create(cuentaService.findAccountsByClientId(1L))
+                .expectNextMatches(res -> res.getIban().equals("ES91210000000000000001"))
+                .verifyComplete();
     }
 
-    /**
-     * Find accounts by client id when cliente exists returns mapped accounts.
-     */
     @Test
-    void findAccountsByClientId_WhenClienteExists_ReturnsMappedAccounts() {
-        ClienteResponseDTO cliente = new ClienteResponseDTO();
-        cliente.setId(1L);
+    void actualizarSaldo_WhenCuentaMissing_EmitsNotFound() {
+        when(cuentaRepository.findByIban("ES404")).thenReturn(Mono.empty());
 
-        when(clienteClient.getClienteById(1L)).thenReturn(cliente);
-        when(cuentaRepository.findAllByClienteId(1L)).thenReturn(Set.of());
-        when(cuentaMapper.toSimpleResponseDTOList(Set.of())).thenReturn(Set.of());
-
-        assertEquals(0, cuentaService.findAccountsByClientId(1L).size());
+        StepVerifier.create(cuentaService.actualizarSaldo("ES404", 99.0))
+                .expectError(NotFoundException.class)
+                .verify();
     }
 
-    /**
-     * Actualizar saldo when account exists saves updated balance.
-     */
     @Test
-    void actualizarSaldo_WhenAccountExists_SavesUpdatedBalance() {
-        Cuenta cuenta = Cuenta.builder().iban("ES91210000000000000001").balance(100.0).clienteId(1L).build();
-        when(cuentaRepository.findByIban("ES91210000000000000001")).thenReturn(Optional.of(cuenta));
+    void generarIban_WhenLastIdPresent_ReturnsExpectedFormat() {
+        when(cuentaRepository.obtenerUltimoId()).thenReturn(Mono.just(15L));
 
-        cuentaService.actualizarSaldo("ES91210000000000000001", 250.0);
+        StepVerifier.create(cuentaService.generarIban())
+                .expectNext("ES91210000000000000016")
+                .verifyComplete();
+    }
 
-        assertEquals(250.0, cuenta.getBalance());
+    @Test
+    void actualizarSaldo_WhenCuentaExists_SavesAndCompletes() {
+        Cuenta cuenta = Cuenta.builder().iban("ES91210000000000000001").balance(20.0).clienteId(2L).build();
+        when(cuentaRepository.findByIban(cuenta.getIban())).thenReturn(Mono.just(cuenta));
+        when(cuentaRepository.save(cuenta)).thenReturn(Mono.just(cuenta));
+
+        StepVerifier.create(cuentaService.actualizarSaldo(cuenta.getIban(), 80.0))
+                .verifyComplete();
+
         verify(cuentaRepository).save(cuenta);
     }
 
-    /**
-     * Generar iban when repository empty starts from one.
-     */
     @Test
-    void generarIban_WhenRepositoryEmpty_StartsFromOne() {
-        when(cuentaRepository.obtenerUltimoId()).thenReturn(Optional.empty());
+    void crearCuenta_WhenClienteExiste_CreaCuentaConIbanYNombre() throws IOException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"id\":9,\"dni\":\"12345678A\",\"nombre\":\"Ana\",\"apellidos\":\"Lopez\",\"email\":\"ana@test.com\",\"telefono\":\"600111222\"}"));
+            server.start();
 
-        String iban = cuentaService.generarIban();
+            CuentaRepository repo = org.mockito.Mockito.mock(CuentaRepository.class);
+            CuentaService service = new CuentaService(
+                    repo,
+                    WebClient.builder(),
+                    new CuentaMapper(),
+                    String.format("http://localhost:%s", server.getPort())
+            );
 
-        assertTrue(iban.startsWith("ES91210000"));
-        assertTrue(iban.endsWith("000000000001"));
+            when(repo.obtenerUltimoId()).thenReturn(Mono.just(41L));
+            when(repo.save(org.mockito.ArgumentMatchers.any(Cuenta.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+            CuentaRequestDTO req = new CuentaRequestDTO();
+            req.setClienteId(9L);
+
+            StepVerifier.create(service.crearCuenta(9L, req))
+                    .expectNextMatches(res -> res.getClienteId().equals(9L)
+                            && res.getIban().equals("ES91210000000000000042")
+                            && "Ana Lopez".equals(res.getClienteName()))
+                    .verifyComplete();
+        }
     }
 
-    /**
-     * Find account by iban when cliente service fails throws service exception.
-     */
     @Test
-    void findAccountByIban_WhenClienteServiceFails_ThrowsServiceException() {
-        Cuenta cuenta = Cuenta.builder().id(1L).iban("ES91210000000000000001").clienteId(7L).balance(50.0).build();
+    void crearCuenta_WhenClienteNoExiste_EmitsNotFound() throws IOException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setResponseCode(404));
+            server.start();
 
-        when(cuentaRepository.findByIban("ES91210000000000000001")).thenReturn(Optional.of(cuenta));
-        when(clienteClient.getClienteById(7L)).thenThrow(mock(FeignException.InternalServerError.class));
+            CuentaRepository repo = org.mockito.Mockito.mock(CuentaRepository.class);
+            CuentaService service = new CuentaService(
+                    repo,
+                    WebClient.builder(),
+                    new CuentaMapper(),
+                    String.format("http://localhost:%s", server.getPort())
+            );
 
-        assertThrows(ServiceException.class, () -> cuentaService.findAccountByIban("ES91210000000000000001"));
+            CuentaRequestDTO req = new CuentaRequestDTO();
+            req.setClienteId(99L);
+
+            StepVerifier.create(service.crearCuenta(99L, req))
+                    .expectError(NotFoundException.class)
+                    .verify();
+
+            verify(repo, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any(Cuenta.class));
+        }
     }
 
-    /**
-     * Actualizar saldo when account missing throws not found exception.
-     */
     @Test
-    void actualizarSaldo_WhenAccountMissing_ThrowsNotFoundException() {
-        when(cuentaRepository.findByIban("ES404")).thenReturn(Optional.empty());
+    void findAccountByIban_WhenExists_CombinaCuentaYCliente() throws IOException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"id\":7,\"dni\":\"12345678A\",\"nombre\":\"Luis\",\"apellidos\":\"Diaz\",\"email\":\"luis@test.com\",\"telefono\":\"600000001\"}"));
+            server.start();
 
-        assertThrows(NotFoundException.class, () -> cuentaService.actualizarSaldo("ES404", 99.0));
+            CuentaRepository repo = org.mockito.Mockito.mock(CuentaRepository.class);
+            Cuenta cuenta = Cuenta.builder().id(4L).iban("ES91210000000000000004").balance(25.0).clienteId(7L).build();
+            when(repo.findByIban("ES91210000000000000004")).thenReturn(Mono.just(cuenta));
+
+            CuentaService service = new CuentaService(
+                    repo,
+                    WebClient.builder(),
+                    new CuentaMapper(),
+                    String.format("http://localhost:%s", server.getPort())
+            );
+
+            StepVerifier.create(service.findAccountByIban("ES91210000000000000004"))
+                    .expectNextMatches(res -> res.getClienteId().equals(7L)
+                            && res.getIban().equals("ES91210000000000000004")
+                            && "Luis Diaz".equals(res.getClienteName()))
+                    .verifyComplete();
+        }
+    }
+
+    @Test
+    void actualizarSaldos_WhenAmbasCuentasExisten_ActualizaLasDos() {
+        Cuenta origen = Cuenta.builder().iban("ES1").balance(100.0).clienteId(1L).build();
+        Cuenta destino = Cuenta.builder().iban("ES2").balance(200.0).clienteId(2L).build();
+        when(cuentaRepository.findByIban("ES1")).thenReturn(Mono.just(origen));
+        when(cuentaRepository.findByIban("ES2")).thenReturn(Mono.just(destino));
+        when(cuentaRepository.save(origen)).thenReturn(Mono.just(origen));
+        when(cuentaRepository.save(destino)).thenReturn(Mono.just(destino));
+
+        ActualizarSaldosRequestDTO req = new ActualizarSaldosRequestDTO();
+        req.setIbanOrigen("ES1");
+        req.setNuevoSaldoOrigen(40.0);
+        req.setIbanDestino("ES2");
+        req.setNuevoSaldoDestino(260.0);
+
+        StepVerifier.create(cuentaService.actualizarSaldos(req))
+                .verifyComplete();
+
+        org.assertj.core.api.Assertions.assertThat(origen.getBalance()).isEqualTo(40.0);
+        org.assertj.core.api.Assertions.assertThat(destino.getBalance()).isEqualTo(260.0);
+        verify(cuentaRepository).save(origen);
+        verify(cuentaRepository).save(destino);
+    }
+
+    @Test
+    void actualizarSaldos_WhenCuentaOrigenNoExiste_EmitsNotFound() {
+        when(cuentaRepository.findByIban("ES404")).thenReturn(Mono.empty());
+        when(cuentaRepository.findByIban("ES2")).thenReturn(Mono.just(Cuenta.builder().iban("ES2").build()));
+
+        ActualizarSaldosRequestDTO req = new ActualizarSaldosRequestDTO();
+        req.setIbanOrigen("ES404");
+        req.setIbanDestino("ES2");
+        req.setNuevoSaldoOrigen(0.0);
+        req.setNuevoSaldoDestino(0.0);
+
+        StepVerifier.create(cuentaService.actualizarSaldos(req))
+                .expectError(NotFoundException.class)
+                .verify();
+    }
+
+    @Test
+    void actualizarSaldos_WhenCuentaDestinoNoExiste_EmitsNotFound() {
+        Cuenta origen = Cuenta.builder().iban("ES1").balance(100.0).clienteId(1L).build();
+        when(cuentaRepository.findByIban("ES1")).thenReturn(Mono.just(origen));
+        when(cuentaRepository.findByIban("ES404")).thenReturn(Mono.empty());
+
+        ActualizarSaldosRequestDTO req = new ActualizarSaldosRequestDTO();
+        req.setIbanOrigen("ES1");
+        req.setIbanDestino("ES404");
+        req.setNuevoSaldoOrigen(10.0);
+        req.setNuevoSaldoDestino(20.0);
+
+        StepVerifier.create(cuentaService.actualizarSaldos(req))
+                .expectError(NotFoundException.class)
+                .verify();
+
+        verify(cuentaRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any(Cuenta.class));
+    }
+
+    @Test
+    void generarIban_WhenNoRows_StartsAtOne() {
+        when(cuentaRepository.obtenerUltimoId()).thenReturn(Mono.empty());
+
+        StepVerifier.create(cuentaService.generarIban())
+                .expectNext("ES91210000000000000001")
+                .verifyComplete();
     }
 }

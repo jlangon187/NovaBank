@@ -1,154 +1,137 @@
 package com.jlanzasg.novabank.cliente.controller;
 
-import com.jlanzasg.novabank.cliente.dto.cliente.request.ClienteRequestDTO;
 import com.jlanzasg.novabank.cliente.dto.cliente.response.ClienteResponseDTO;
 import com.jlanzasg.novabank.cliente.exception.DuplicateException;
 import com.jlanzasg.novabank.cliente.exception.NotFoundException;
-import com.jlanzasg.novabank.cliente.exception.ServiceException;
+import com.jlanzasg.novabank.cliente.exception.GlobalExceptionHandler;
 import com.jlanzasg.novabank.cliente.service.ClienteService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.mockito.Mockito.doNothing;
 
-/**
- * The type Cliente controller test.
- */
-@WebMvcTest(controllers = ClienteController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class ClienteControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
-    @MockitoBean
+    @Mock
     private ClienteService clienteService;
 
-    /**
-     * Save cliente returns created.
-     *
-     * @throws Exception the exception
-     */
+    @InjectMocks
+    private ClienteController clienteController;
+
+    private void setupClient() {
+        this.webTestClient = WebTestClient.bindToController(clienteController)
+                .controllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
+
     @Test
-    void saveCliente_ReturnsCreated() throws Exception {
+    void findById_WhenExists_Returns200() {
+        setupClient();
         ClienteResponseDTO response = new ClienteResponseDTO();
         response.setId(1L);
         response.setDni("12345678A");
+        when(clienteService.findById(1L)).thenReturn(Mono.just(response));
 
-        when(clienteService.save(any(ClienteRequestDTO.class))).thenReturn(response);
-
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"12345678A\",\"nombre\":\"Juan\",\"apellidos\":\"Perez\",\"email\":\"juan@test.com\",\"telefono\":\"600111222\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.dni").value("12345678A"));
+        webTestClient.get()
+                .uri("/clientes/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(ClienteResponseDTO.class)
+                .value(dto -> org.assertj.core.api.Assertions.assertThat(dto.getDni()).isEqualTo("12345678A"));
     }
 
-    /**
-     * Save cliente when invalid request returns bad request.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void saveCliente_WhenInvalidRequest_ReturnsBadRequest() throws Exception {
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"BAD\",\"nombre\":\"A\",\"apellidos\":\"\",\"email\":\"bad\",\"telefono\":\"123\"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.path").value("/clientes"));
+    void findById_WhenNotFound_Returns404() {
+        setupClient();
+        when(clienteService.findById(99L)).thenReturn(Mono.error(new NotFoundException("Cliente no encontrado")));
+
+        webTestClient.get()
+                .uri("/clientes/99")
+                .exchange()
+                .expectStatus().isNotFound();
     }
 
-    /**
-     * Save cliente when duplicate dni returns conflict payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void saveCliente_WhenDuplicateDni_ReturnsConflictPayload() throws Exception {
-        when(clienteService.save(any(ClienteRequestDTO.class))).thenThrow(new DuplicateException("DNI duplicado"));
+    void listClientes_ReturnsArray() {
+        setupClient();
+        ClienteResponseDTO c1 = new ClienteResponseDTO();
+        c1.setId(1L);
+        c1.setDni("12345678A");
 
-        mockMvc.perform(post("/clientes")
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"dni\":\"12345678A\",\"nombre\":\"Juan\",\"apellidos\":\"Perez\",\"email\":\"juan@test.com\",\"telefono\":\"600111222\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflict"))
-                .andExpect(jsonPath("$.message").value("DNI duplicado"));
+        when(clienteService.findAll()).thenReturn(Flux.just(c1));
+
+        webTestClient.get()
+                .uri("/clientes")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].dni").isEqualTo("12345678A");
     }
 
-    /**
-     * Find by id when not found returns not found payload.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void findById_WhenNotFound_ReturnsNotFoundPayload() throws Exception {
-        when(clienteService.findById(99L)).thenThrow(new NotFoundException("Cliente no encontrado"));
+    void saveCliente_WhenBodyInvalid_Returns400() {
+        setupClient();
 
-        mockMvc.perform(get("/clientes/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").value("Cliente no encontrado"));
+        webTestClient.post()
+                .uri("/clientes")
+                .header("Content-Type", "application/json")
+                .bodyValue("""
+                        {
+                          "dni": "BAD",
+                          "nombre": "A",
+                          "apellidos": "",
+                          "email": "wrong",
+                          "telefono": "123"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Bad Request")
+                .jsonPath("$.path").isEqualTo("/clientes");
     }
 
-    /**
-     * Listar clientes returns ok with array.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void listarClientes_ReturnsOkWithArray() throws Exception {
-        ClienteResponseDTO cliente = new ClienteResponseDTO();
-        cliente.setId(1L);
-        cliente.setDni("12345678A");
-        when(clienteService.findAll()).thenReturn(List.of(cliente));
+    void saveCliente_WhenDuplicateConflict_Returns409() {
+        setupClient();
+        when(clienteService.save(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(Mono.error(new DuplicateException("DNI duplicado")));
 
-        mockMvc.perform(get("/clientes"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].dni").value("12345678A"));
+        webTestClient.post()
+                .uri("/clientes")
+                .header("Content-Type", "application/json")
+                .bodyValue("""
+                        {
+                          "dni": "12345678A",
+                          "nombre": "Mario",
+                          "apellidos": "Ruiz",
+                          "email": "mario@test.com",
+                          "telefono": "611222333"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("DNI duplicado");
     }
 
-    /**
-     * Delete cliente returns no content.
-     *
-     * @throws Exception the exception
-     */
     @Test
-    void deleteCliente_ReturnsNoContent() throws Exception {
-        doNothing().when(clienteService).deleteById(1L);
+    void deleteCliente_WhenNotFound_Returns404() {
+        setupClient();
+        when(clienteService.deleteById(777L)).thenReturn(Mono.error(new NotFoundException("No existe")));
 
-        mockMvc.perform(delete("/clientes/1"))
-                .andExpect(status().isNoContent());
-    }
-
-    /**
-     * Find by dni when service fails returns internal server error payload.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    void findByDni_WhenServiceFails_ReturnsServiceUnavailablePayload() throws Exception {
-        when(clienteService.findByDni("12345678A")).thenThrow(new ServiceException("Fallo de dependencia"));
-
-        mockMvc.perform(get("/clientes/dni/12345678A"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.error").value("Service Unavailable"))
-                .andExpect(jsonPath("$.path").value("/clientes/dni/12345678A"));
+        webTestClient.delete()
+                .uri("/clientes/777")
+                .exchange()
+                .expectStatus().isNotFound();
     }
 }

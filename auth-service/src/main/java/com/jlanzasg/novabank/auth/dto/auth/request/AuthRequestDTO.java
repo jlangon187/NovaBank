@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * The type Auth request dto.
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+/**
+ * The type Jwt provider.
+ */
 @Component
 public class JwtProvider {
 
@@ -22,6 +25,12 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
+    /**
+     * Generate token string.
+     *
+     * @param username the username
+     * @return the string
+     */
     public String generateToken(String username) {
         return Jwts.builder()
                 .subject(username)
@@ -31,6 +40,12 @@ public class JwtProvider {
                 .compact();
     }
 
+    /**
+     * Validate token boolean.
+     *
+     * @param token the token
+     * @return the boolean
+     */
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

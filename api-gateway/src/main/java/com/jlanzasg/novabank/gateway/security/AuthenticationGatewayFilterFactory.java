@@ -20,11 +20,19 @@ public class AuthenticationGatewayFilterFactory extends AbstractGatewayFilterFac
 
     private final WebClient webClient;
 
+    /**
+     * Instantiates a new Authentication gateway filter factory.
+     *
+     * @param webClientBuilder the web client builder
+     */
     public AuthenticationGatewayFilterFactory(WebClient.Builder webClientBuilder) {
         super(Config.class);
         this.webClient = webClientBuilder.build();
     }
 
+    /**
+     * The type Config.
+     */
     public static class Config { }
 
     @Override
