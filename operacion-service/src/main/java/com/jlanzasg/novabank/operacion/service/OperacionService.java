@@ -15,6 +15,7 @@ import com.jlanzasg.novabank.operacion.model.Movimiento;
 import com.jlanzasg.novabank.operacion.model.TipoMovimiento;
 import com.jlanzasg.novabank.operacion.repository.OperacionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -47,9 +48,17 @@ public class OperacionService {
      * @param webClientBuilder    the web client builder
      * @param operacionMapper     the operacion mapper
      */
+    @Autowired
     public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper) {
         this.operacionRepository = operacionRepository;
         this.webClient = webClientBuilder.baseUrl("http://cuenta-service").build();
+        this.exchangeRateClient = exchangeRateClient;
+        this.operacionMapper = operacionMapper;
+    }
+
+    public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper, String cuentaServiceBaseUrl) {
+        this.operacionRepository = operacionRepository;
+        this.webClient = webClientBuilder.baseUrl(cuentaServiceBaseUrl).build();
         this.exchangeRateClient = exchangeRateClient;
         this.operacionMapper = operacionMapper;
     }
@@ -123,14 +132,13 @@ public class OperacionService {
             log.info("[TraceID: {}] Iniciando transferencia de {} a {} por valor de {}",
                     traceId, dto.getCuentaOrigen(), dto.getCuentaDestino(), dto.getImporte());
 
-            return Mono.zip(
-                    obtenerCuenta(dto.getCuentaOrigen()),
-                    obtenerCuenta(dto.getCuentaDestino()),
-                    exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
-            ).flatMapMany(tuple -> {
+            return exchangeRateClient.obtenerTasaCambioSegura(dto.getMonedaOrigen(), dto.getMonedaDestino())
+                    .flatMapMany(tasa -> Mono.zip(
+                            obtenerCuenta(dto.getCuentaOrigen()),
+                            obtenerCuenta(dto.getCuentaDestino())
+                    ).flatMapMany(tuple -> {
                 CuentaResponseDTO cuentaOrigen = tuple.getT1();
                 CuentaResponseDTO cuentaDestino = tuple.getT2();
-                Double tasa = tuple.getT3();
 
                 if (cuentaOrigen.getBalance() < dto.getImporte()) {
                     return Flux.error(new SaldoInsuficienteException("Fondos insuficientes en la cuenta de origen. Balance actual: " + cuentaOrigen.getBalance()));
@@ -155,7 +163,7 @@ public class OperacionService {
                                 guardarMovimiento(dto.getCuentaOrigen(), importeExtraido, TipoMovimiento.TRANSFERENCIA_SALIENTE),
                                 guardarMovimiento(dto.getCuentaDestino(), importeIngresado, TipoMovimiento.TRANSFERENCIA_ENTRANTE)
                         ));
-            });
+            }));
         });
     }
 
