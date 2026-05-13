@@ -1,7 +1,6 @@
 package com.jlanzasg.novabank.operacion.service;
 
 import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.exception.ExchangeRateUnavailableException;

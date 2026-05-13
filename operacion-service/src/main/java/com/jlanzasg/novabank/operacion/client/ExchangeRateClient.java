@@ -9,20 +9,41 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import java.time.Duration;
 
+/**
+ * The type Exchange rate client.
+ */
 @Component
 public class ExchangeRateClient {
 
     private final WebClient exchangeWebClient;
 
+    /**
+     * Instantiates a new Exchange rate client.
+     *
+     * @param webClientBuilder the web client builder
+     */
     @Autowired
     public ExchangeRateClient(WebClient.Builder webClientBuilder) {
         this.exchangeWebClient = webClientBuilder.clone().baseUrl("http://exchange-rate-mock-service").build();
     }
 
+    /**
+     * Instantiates a new Exchange rate client.
+     *
+     * @param webClientBuilder the web client builder
+     * @param baseUrl          the base url
+     */
     public ExchangeRateClient(WebClient.Builder webClientBuilder, String baseUrl) {
         this.exchangeWebClient = webClientBuilder.clone().baseUrl(baseUrl).build();
     }
 
+    /**
+     * Obtener tasa cambio segura mono.
+     *
+     * @param monedaOrigen  the moneda origen
+     * @param monedaDestino the moneda destino
+     * @return the mono
+     */
     @CircuitBreaker(name = "exchange-service", fallbackMethod = "fallbackExchangeRate")
     @Retry(name = "exchange-service")
     public Mono<Double> obtenerTasaCambioSegura(String monedaOrigen, String monedaDestino) {
@@ -46,6 +67,14 @@ public class ExchangeRateClient {
                 .onErrorMap(ex -> new ExchangeRateUnavailableException(from, to, ex));
     }
 
+    /**
+     * Fallback exchange rate mono.
+     *
+     * @param monedaOrigen  the moneda origen
+     * @param monedaDestino the moneda destino
+     * @param t             the t
+     * @return the mono
+     */
     public Mono<Double> fallbackExchangeRate(String monedaOrigen, String monedaDestino, Throwable t) {
         System.err.println("¡ALERTA! Servicio de divisas caído. Circuit Breaker activado.");
         return Mono.error(new ExchangeRateUnavailableException("No se pudo obtener la tasa de cambio en este momento. Inténtelo más tarde."));

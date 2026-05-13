@@ -8,6 +8,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * The type Trace filter.
+ */
 @Component
 public class TraceFilter implements WebFilter {
 

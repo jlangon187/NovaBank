@@ -1,11 +1,10 @@
 package com.jlanzasg.novabank.operacion.controller;
 
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaSaldoResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.operacion.service.OperacionService;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
