@@ -2,8 +2,8 @@ package com.jlanzasg.novabank.operacion.service;
 
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDTO;
 import com.jlanzasg.novabank.operacion.client.ExchangeRateClient;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaResponseDTO;
-import com.jlanzasg.novabank.operacion.dto.cuenta.response.CuentaSaldoResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaResponseDTO;
+import com.jlanzasg.novabank.operacion.dto.cuenta.CuentaSaldoResponseDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.OperacionRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.request.TransferenciaRequestDTO;
 import com.jlanzasg.novabank.operacion.dto.operacion.response.MovimientoResponseDTO;
@@ -23,7 +23,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import io.micrometer.tracing.Tracer;
 
 import java.time.LocalDateTime;
 
@@ -46,6 +45,7 @@ public class OperacionService {
      *
      * @param operacionRepository the operacion repository
      * @param webClientBuilder    the web client builder
+     * @param exchangeRateClient  the exchange rate client
      * @param operacionMapper     the operacion mapper
      */
     @Autowired
@@ -56,6 +56,15 @@ public class OperacionService {
         this.operacionMapper = operacionMapper;
     }
 
+    /**
+     * Instantiates a new Operacion service.
+     *
+     * @param operacionRepository  the operacion repository
+     * @param webClientBuilder     the web client builder
+     * @param exchangeRateClient   the exchange rate client
+     * @param operacionMapper      the operacion mapper
+     * @param cuentaServiceBaseUrl the cuenta service base url
+     */
     public OperacionService(OperacionRepository operacionRepository, WebClient.Builder webClientBuilder, ExchangeRateClient exchangeRateClient, OperacionMapper operacionMapper, String cuentaServiceBaseUrl) {
         this.operacionRepository = operacionRepository;
         this.webClient = webClientBuilder.baseUrl(cuentaServiceBaseUrl).build();

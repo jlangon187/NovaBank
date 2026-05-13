@@ -8,16 +8,30 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+/**
+ * The type Auth controller.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
 
+    /**
+     * Instantiates a new Auth controller.
+     *
+     * @param authService the auth service
+     */
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
+    /**
+     * Login mono.
+     *
+     * @param requestMono the request mono
+     * @return the mono
+     */
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponseDTO>> login(@RequestBody Mono<AuthRequestDTO> requestMono) {
         return requestMono.flatMap(request -> authService.login(request))
@@ -25,6 +39,12 @@ public class AuthController {
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
+    /**
+     * Validate token mono.
+     *
+     * @param token the token
+     * @return the mono
+     */
     @GetMapping("/validate")
     public Mono<ResponseEntity<Boolean>> validateToken(@RequestParam String token) {
         return authService.validateToken(token)

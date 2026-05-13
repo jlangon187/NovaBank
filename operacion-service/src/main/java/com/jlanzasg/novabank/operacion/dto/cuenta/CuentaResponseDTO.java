@@ -1,4 +1,4 @@
-package com.jlanzasg.novabank.operacion.dto.cuenta.response;
+package com.jlanzasg.novabank.operacion.dto.cuenta;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
