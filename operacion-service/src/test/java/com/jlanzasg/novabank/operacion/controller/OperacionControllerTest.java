@@ -12,11 +12,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
 
@@ -60,29 +58,6 @@ class OperacionControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.tipoMovimiento").isEqualTo("DEPOSITO");
-    }
-
-    @Test
-    void streamMovimientos_RecibeEventos() {
-        setupClient();
-        MovimientoResponseDTO m1 = new MovimientoResponseDTO();
-        m1.setTipoMovimiento("DEPOSITO");
-        MovimientoResponseDTO m2 = new MovimientoResponseDTO();
-        m2.setTipoMovimiento("RETIRO");
-
-        when(operacionService.obtenerStreamingMovimientos()).thenReturn(Flux.just(m1, m2));
-
-        FluxExchangeResult<MovimientoResponseDTO> result = webTestClient.get()
-                .uri("/operaciones/streaming/movimientos")
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(MovimientoResponseDTO.class);
-
-        StepVerifier.create(result.getResponseBody())
-                .expectNextCount(2)
-                .thenCancel()
-                .verify();
     }
 
     @Test
@@ -172,22 +147,6 @@ class OperacionControllerTest {
                 .expectStatus().isEqualTo(503)
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("FX caido");
-    }
-
-    @Test
-    void streamMovimientos_WhenNoEvents_ClosesWithoutItems() {
-        setupClient();
-        when(operacionService.obtenerStreamingMovimientos()).thenReturn(Flux.empty());
-
-        FluxExchangeResult<MovimientoResponseDTO> result = webTestClient.get()
-                .uri("/operaciones/streaming/movimientos")
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(MovimientoResponseDTO.class);
-
-        StepVerifier.create(result.getResponseBody())
-                .verifyComplete();
     }
 
     @Test

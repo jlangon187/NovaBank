@@ -125,13 +125,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.jlanzasg.novabank</groupId>
-            <artifactId>cuenta-service</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
