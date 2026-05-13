@@ -4,6 +4,7 @@ import com.jlanzasg.novabank.cuenta.dto.cuenta.request.ActualizarSaldosRequestDT
 import com.jlanzasg.novabank.cuenta.dto.cuenta.request.CuentaRequestDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaResponseDTO;
 import com.jlanzasg.novabank.cuenta.dto.cuenta.response.CuentaSimpleResponseDTO;
+import com.jlanzasg.novabank.cuenta.dto.movimiento.response.MovimientoResponseDTO;
 import com.jlanzasg.novabank.cuenta.service.CuentaService;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,12 +12,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Set;
 
 /**
  * The type Cuenta controller.
@@ -132,5 +131,18 @@ public class CuentaController {
     @ResponseStatus(HttpStatus.OK)
     public Mono<Void> actualizarSaldo(@RequestBody ActualizarSaldosRequestDTO request) {
         return cuentaService.actualizarSaldos(request);
+    }
+
+    @GetMapping(value = "/{id}/movimientos/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<MovimientoResponseDTO> streamMovimientosPorCuenta(@PathVariable("id") Long idCuenta) {
+        return cuentaService.streamMovimientosByCuenta(idCuenta);
+    }
+
+    @PostMapping("/movimientos/evento")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Mono<Void> publicarMovimiento(@RequestBody MovimientoResponseDTO movimientoResponseDTO) {
+        cuentaService.emitirMovimiento(movimientoResponseDTO);
+        return Mono.empty();
     }
 }

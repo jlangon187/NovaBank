@@ -49,17 +49,55 @@ class CuentaServiceTest {
     }
 
     @Test
-    void findAccountsByClientId_WhenExists_ReturnsFlux() {
-        Cuenta cuenta = Cuenta.builder().id(1L).iban("ES91210000000000000001").balance(100.0).clienteId(1L).build();
-        CuentaSimpleResponseDTO dto = new CuentaSimpleResponseDTO();
-        dto.setIban("ES91210000000000000001");
+    void findAccountsByClientId_WhenExists_ReturnsFlux() throws IOException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("{\"id\":1,\"dni\":\"12345678A\",\"nombre\":\"Ana\",\"apellidos\":\"Lopez\",\"email\":\"ana@test.com\",\"telefono\":\"600111222\"}"));
+            server.start();
 
-        when(cuentaRepository.findAllByClienteId(1L)).thenReturn(Flux.just(cuenta));
-        when(cuentaMapper.toSimpleResponseDTO(cuenta)).thenReturn(dto);
+            CuentaRepository repo = org.mockito.Mockito.mock(CuentaRepository.class);
+            CuentaMapper mapper = org.mockito.Mockito.mock(CuentaMapper.class);
+            CuentaService service = new CuentaService(
+                    repo,
+                    WebClient.builder(),
+                    mapper,
+                    String.format("http://localhost:%s", server.getPort())
+            );
 
-        StepVerifier.create(cuentaService.findAccountsByClientId(1L))
-                .expectNextMatches(res -> res.getIban().equals("ES91210000000000000001"))
-                .verifyComplete();
+            Cuenta cuenta = Cuenta.builder().id(1L).iban("ES91210000000000000001").balance(100.0).clienteId(1L).build();
+            CuentaSimpleResponseDTO dto = new CuentaSimpleResponseDTO();
+            dto.setIban("ES91210000000000000001");
+
+            when(repo.findAllByClienteId(1L)).thenReturn(Flux.just(cuenta));
+            when(mapper.toSimpleResponseDTO(cuenta)).thenReturn(dto);
+
+            StepVerifier.create(service.findAccountsByClientId(1L))
+                    .expectNextMatches(res -> res.getIban().equals("ES91210000000000000001"))
+                    .verifyComplete();
+        }
+    }
+
+    @Test
+    void findAccountsByClientId_WhenClienteNoExiste_EmitsNotFound() throws IOException {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setResponseCode(404));
+            server.start();
+
+            CuentaRepository repo = org.mockito.Mockito.mock(CuentaRepository.class);
+            CuentaService service = new CuentaService(
+                    repo,
+                    WebClient.builder(),
+                    new CuentaMapper(),
+                    String.format("http://localhost:%s", server.getPort())
+            );
+
+            StepVerifier.create(service.findAccountsByClientId(99L))
+                    .expectError(NotFoundException.class)
+                    .verify();
+
+            verify(repo, org.mockito.Mockito.never()).findAllByClienteId(99L);
+        }
     }
 
     @Test

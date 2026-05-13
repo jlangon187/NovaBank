@@ -1,5 +1,8 @@
 package com.jlanzasg.novabank.cuenta.integration;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +18,24 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @ActiveProfiles("test")
 class CuentaFullIntegrationTest {
 
+    private static final MockWebServer clienteServer = new MockWebServer();
+
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
+        try {
+            clienteServer.start();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
         registry.add("spring.r2dbc.url", () -> "r2dbc:h2:mem:///cuenta_it;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_UPPER=false");
         registry.add("spring.r2dbc.username", () -> "sa");
         registry.add("spring.r2dbc.password", () -> "");
+        registry.add("spring.cloud.discovery.client.simple.instances.cliente-service[0].uri", () -> clienteServer.url("/").toString());
+    }
+
+    @AfterAll
+    static void tearDownClienteServer() throws java.io.IOException {
+        clienteServer.shutdown();
     }
 
     private WebTestClient webTestClient;
@@ -42,6 +58,10 @@ class CuentaFullIntegrationTest {
 
     @Test
     void readAndUpdateBalance_FullFlowAgainstRealStack() {
+        clienteServer.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"id\":7,\"dni\":\"12345678A\",\"nombre\":\"Ana\",\"apellidos\":\"Lopez\",\"email\":\"ana@test.com\",\"telefono\":\"600111222\"}"));
+
         webTestClient.get()
                 .uri("/cuentas/cliente/7")
                 .exchange()

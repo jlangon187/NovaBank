@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -120,22 +119,6 @@ public class OperacionController {
 
         return operacionService.obtenerMovimientosPorCuentaYFecha(iban, inicio, fin);
     }
-
-
-    /**
-     * Streaming movimientos flux.
-     *
-     * @return the flux
-     */
-    @Operation(summary = "Streaming en vivo de movimientos", description = "Abre una conexión persistente (SSE) para recibir notificaciones de nuevos movimientos en tiempo real.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Conexión SSE establecida con éxito")
-    })
-    @GetMapping(value = "/streaming/movimientos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<MovimientoResponseDTO> streamingMovimientos() {
-        return operacionService.obtenerStreamingMovimientos();
-    }
-
     /**
      * Obtener saldo mono.
      *
