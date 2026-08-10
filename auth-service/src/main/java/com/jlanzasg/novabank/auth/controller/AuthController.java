@@ -34,13 +34,26 @@ public class AuthController {
      */
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponseDTO>> login(@RequestBody Mono<AuthRequestDTO> requestMono) {
-        return requestMono.flatMap(request -> authService.login(request))
+        return requestMono.flatMap(authService::login)
                 .map(token -> ResponseEntity.ok(new AuthResponseDTO(token)))
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
     /**
-     * Validate token mono.
+     * Registra un nuevo usuario. <<<< SOLO PARA CREAR EL PRIMER Usuario >>>>
+     *
+     * @param requestMono datos de acceso del usuario
+     * @return respuesta 201 cuando el usuario se crea correctamente
+     */
+//    @PostMapping("/register")
+//
+//    public Mono<ResponseEntity<Void>> registrarUsuario(@RequestBody Mono<AuthRequestDTO> requestMono) {
+//        return requestMono.flatMap(authService::registrarUsuario)
+//                .map(usuario -> ResponseEntity.status(HttpStatus.CREATED).<Void>build());
+//    }
+
+    /**
+     * Valídate token mono.
      *
      * @param token the token
      * @return the mono

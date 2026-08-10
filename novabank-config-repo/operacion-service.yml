@@ -1,0 +1,42 @@
+server:
+  port: 8083 # Puerto del microservicio de operaciones
+  forward-headers-strategy: framework
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/novabank_operaciones # Base de datos de PostgreSQL
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:root}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/ # URL del Eureka Server
+      
+resilience4j:
+  circuitbreaker:
+    instances:
+      cuenta-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+      exchange-service: # <--- NUEVA CONFIGURACIÓN PARA DIVISAS
+        sliding-window-size: 5 # Evaluamos las últimas 5 llamadas
+        failure-rate-threshold: 50 # Si el 50% falla, abrimos circuito
+        wait-duration-in-open-state: 15s # Esperamos 15s antes de reintentar (Half-Open)
+        permitted-number-of-calls-in-half-open-state: 2
+  retry:
+    instances:
+      exchange-service:
+        max-attempts: 3 # Si falla por un microcorte, reintenta 3 veces rápido
+        wait-duration: 2s
+
+springdoc:
+  api-docs:
+    path: /operaciones/v3/api-docs
+    
+management:
+  tracing:
+    sampling:
+      probability: 1.0

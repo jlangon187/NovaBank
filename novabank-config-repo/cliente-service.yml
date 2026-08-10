@@ -1,0 +1,22 @@
+server:
+  port: 8081 # Puerto del microservicio de clientes
+  forward-headers-strategy: framework
+  
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/novabank_clientes # Base de datos de PostgreSQL
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:root}
+  cache:
+    cache-names: clientes, clientesDni # El nombre de nuestro "cajón" de memoria
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m # Guarda máximo 500 clientes y bórralos a los 10 minutos
+    
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/ # URL del Eureka Server
+      
+springdoc:
+  api-docs:
+    path: /clientes/v3/api-docs

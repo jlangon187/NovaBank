@@ -37,3 +37,11 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Local environment ###
+.env
+.env.local
+
+### Session files ###
+session*.md
+sessions*.md

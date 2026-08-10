@@ -1,0 +1,81 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # 1. EL CORS PARA QUE SWAGGER NO FALLE
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns: "*"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                
+          # 2. EL DESCUBRIMIENTO DE EUREKA
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+              
+          # 3. LAS RUTAS
+          routes:
+            - id: auth-service-route
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
+                
+            - id: cliente-service-route
+              uri: lb://cliente-service
+              predicates:
+                - Path=/clientes/**
+              filters:
+                - Authentication
+                
+            - id: cuenta-service-route
+              uri: lb://cuenta-service
+              predicates:
+                - Path=/cuentas/**
+              filters:
+                - Authentication
+                
+            - id: operacion-service-route
+              uri: lb://operacion-service
+              predicates:
+                - Path=/operaciones/**, /consultas/**
+              filters:
+                - Authentication
+                
+            - id: exchange-service-route
+              uri: lb://exchange-rate-mock-service
+              predicates:
+                - Path=/exchange/**, /api/exchange-rate/**
+
+# 4. LA CONFIGURACIÓN DE SWAGGER CENTRALIZADO
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: "Auth Service"
+        url: /api/auth/v3/api-docs
+      - name: "Cliente Service"
+        url: /clientes/v3/api-docs
+      - name: "Cuenta Service"
+        url: /cuentas/v3/api-docs
+      - name: "Operacion Service"
+        url: /operaciones/v3/api-docs
+      - name: "Exchange Service"
+        url: /api/exchange-rate/v3/api-docs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+        
+management:
+  tracing:
+    sampling:
+      probability: 1.0

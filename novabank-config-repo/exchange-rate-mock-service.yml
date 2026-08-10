@@ -1,0 +1,16 @@
+server:
+  port: 8090
+  forward-headers-strategy: framework
+  
+spring:
+  application:
+    name: exchange-rate-mock-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+      
+springdoc:
+  api-docs:
+    path: /api/exchange-rate/v3/api-docs
