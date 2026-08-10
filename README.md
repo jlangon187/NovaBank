@@ -160,7 +160,7 @@ erDiagram
 
 ## 5. API Gateway y seguridad
 
-Las rutas se centralizan en `C:/novabank-config-repo/api-gateway.yml`.
+Las rutas se centralizan en `novabank-config-repo/api-gateway.yml` (el Config Server lo monta como `/config-repo/api-gateway.yml`).
 
 | Route ID | Path Predicate | Target URI | Filtro |
 |---|---|---|---|
@@ -378,6 +378,69 @@ Resultado validado:
 
 ## 11. Guía de ejecución local
 
+### Ejecución con Docker Desktop
+
+El proyecto incluye una configuración autocontenida para Docker Desktop. PostgreSQL 18 restaura los datos de `db-init/` en su primer arranque, `config-server` lee los archivos de `novabank-config-repo/` con el perfil `native` y los microservicios se comunican usando la red interna de Docker.
+
+Requisitos: Docker Desktop iniciado y los puertos locales `5432`, `8080` y `8761` disponibles.
+
+El archivo `.env` no se versiona porque contiene credenciales locales. Crea una copia a partir de la plantilla:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edita `.env` con la contraseña de PostgreSQL y el secreto JWT para tu entorno:
+
+```text
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=tu-contraseña
+JWT_SECRET=tu-secreto-jwt
+```
+
+`db-init/` y `novabank-config-repo/` se versionan en este repositorio con contenido de demo **sanitizado** (sin credenciales ni datos personales reales): los scripts de `db-init/` crean las cuatro bases de datos con sus tablas y, en `novabank_usuarios`, la cuenta de administrador de prueba `admin@admin.com / admin`. Las credenciales de tu entorno se inyectan únicamente mediante `.env`, que sí queda fuera de Git.
+
+```powershell
+docker compose up --build
+```
+
+Servicios expuestos desde el equipo local:
+
+| Servicio | URL |
+|---|---|
+| API Gateway | `http://localhost:8080` |
+| Swagger centralizado | `http://localhost:8080/swagger-ui.html` |
+| Eureka | `http://localhost:8761` |
+| PostgreSQL | `localhost:5432` |
+
+Para iniciar el entorno ya construido en segundo plano:
+
+```powershell
+docker compose up -d
+```
+
+Para ver el estado y los logs:
+
+```powershell
+docker compose ps
+docker compose logs -f
+```
+
+Para detener los contenedores sin borrar los datos:
+
+```powershell
+docker compose down
+```
+
+Los scripts de `db-init/` solo se ejecutan cuando el volumen de PostgreSQL se crea por primera vez. Para reinicializar las bases desde esos backups, elimina expresamente el volumen:
+
+```powershell
+docker compose down -v
+docker compose up --build
+```
+
+`novabank-config-repo/` se monta como solo lectura en el Config Server. Cambia sus archivos YAML y reinicia el servicio que deba volver a cargar esa configuración.
+
 Orden recomendado de arranque:
 
 1. `eureka-server`
@@ -391,11 +454,45 @@ Orden recomendado de arranque:
 
 Notas:
 
-- Config Server espera el repositorio en `C:/novabank-config-repo/`.
+- Config Server lee `novabank-config-repo/` con el perfil `native` (en el contenedor: `/config-repo`).
 - Cada servicio consume configuración remota y se registra en Eureka.
 - Las llamadas externas deben entrar por `api-gateway`.
 - Las llamadas internas entre microservicios reactivos se realizan con `WebClient` y resolución por nombre de servicio.
 - El streaming SSE de movimientos se consume desde `cuenta-service` mediante `GET /cuentas/{id}/movimientos/stream`.
+
+### Ejecución local (IDE / Maven)
+
+El mismo árbol de código puede ejecutarse sin Docker para depurar en el IDE. Los microservicios usan valores por defecto compatibles con el PostgreSQL de Docker, de modo que basta con tener PostgreSQL accesible en `localhost:5432` (por ejemplo el contenedor de Docker) para arrancar todo el entorno local:
+
+| Variable | Default local | Valor en Docker |
+|---|---:|---|
+| `POSTGRES_HOST` | `localhost` | `postgres` |
+| `POSTGRES_PORT` | `5432` | `5432` |
+| `POSTGRES_USER` | `postgres` | `.env` |
+| `POSTGRES_PASSWORD` | `root` | `.env` |
+| `JWT_SECRET` | hex de desarrollo | `.env` |
+| `EUREKA_HOST` | `localhost` | `eureka-server` |
+| `CONFIG_SERVER_URL` | `http://localhost:8888` | `http://config-server:8888` |
+| `CONFIG_REPO_PATH` | `../novabank-config-repo` | `/config-repo` |
+
+Consulta "requisitos" y arranca los módulos en orden desde el IDE o con Maven:
+
+```bash
+mvn -pl eureka-server spring-boot:run
+mvn -pl config-server spring-boot:run
+mvn -pl auth-service spring-boot:run
+mvn -pl cliente-service spring-boot:run
+mvn -pl cuenta-service spring-boot:run
+mvn -pl exchange-rate-mock-service spring-boot:run
+mvn -pl operacion-service spring-boot:run
+mvn -pl api-gateway spring-boot:run
+```
+
+Notas del modo local:
+
+- Config Server resuelve el repositorio con el default `CONFIG_REPO_PATH=../novabank-config-repo`, relativo al working dir del módulo. Si tu IDE usa otro directorio de trabajo, define `CONFIG_REPO_PATH` en la run configuration de `config-server`.
+- Cada módulo puede sobreescribir cualquier variable con variables de entorno de la run configuration del IDE.
+- No es posible ejecutar a la vez el stack Docker completo y la versión local: comparten los puertos `5432`, `8080` y `8761`. Modo recomendado: Docker completo **o** microservicios locales + PostgreSQL de Docker.
 
 NovaBank Módulo 5 consolida la transición desde microservicios síncronos hacia un ecosistema reactivo: controladores WebFlux, persistencia R2DBC, comunicación no bloqueante, eventos SSE y resiliencia fail-fast para proteger la consistencia financiera.
 
