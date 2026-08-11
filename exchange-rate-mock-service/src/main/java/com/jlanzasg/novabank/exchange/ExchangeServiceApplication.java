@@ -15,5 +15,7 @@ public class ExchangeServiceApplication {
      *
      * @param args the input arguments
      */
-    public static void main(String[] args) {SpringApplication.run(ExchangeServiceApplication.class, args);}
+    public static void main(String[] args) {
+        SpringApplication.run(ExchangeServiceApplication.class, args);
+    }
 }

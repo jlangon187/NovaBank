@@ -3,6 +3,7 @@ package com.jlanzasg.novabank.exchange.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
