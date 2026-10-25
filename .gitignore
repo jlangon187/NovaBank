@@ -9,6 +9,7 @@ target/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -37,3 +38,11 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Local environment ###
+.env
+.env.local
+
+### Session files ###
+session*.md
+sessions*.md

@@ -1,0 +1,145 @@
+name: novabank
+
+x-service: &service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  environment:
+    CONFIG_SERVER_URL: http://config-server:8888
+    EUREKA_HOST: eureka-server
+    POSTGRES_HOST: postgres
+    POSTGRES_USER: ${POSTGRES_USER:-postgres}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    JWT_SECRET: ${JWT_SECRET}
+    CONFIG_REPO_PATH: /config-repo
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  eureka-server:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: eureka-server
+    ports:
+      - "8761:8761"
+
+  config-server:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: config-server
+    volumes:
+      - ./novabank-config-repo:/config-repo:ro
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  auth-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: auth-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+
+  cliente-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: cliente-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+
+  cuenta-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: cuenta-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+
+  operacion-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: operacion-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+
+  exchange-rate-mock-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: exchange-rate-mock-service
+    depends_on:
+      config-server:
+        condition: service_started
+
+  api-gateway:
+    <<: *service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      config-server:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      cliente-service:
+        condition: service_started
+      cuenta-service:
+        condition: service_started
+      operacion-service:
+        condition: service_started
+      exchange-rate-mock-service:
+        condition: service_started
+
+volumes:
+  postgres-data:

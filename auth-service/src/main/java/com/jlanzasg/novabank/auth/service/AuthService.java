@@ -1,6 +1,7 @@
 package com.jlanzasg.novabank.auth.service;
 
 import com.jlanzasg.novabank.auth.dto.auth.request.AuthRequestDTO;
+import com.jlanzasg.novabank.auth.model.Usuario;
 import com.jlanzasg.novabank.auth.repository.UsuarioRepository;
 import com.jlanzasg.novabank.auth.security.JwtProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,5 +53,19 @@ public class AuthService {
      */
     public Mono<Boolean> validateToken(String token) {
         return Mono.fromCallable(() -> jwtProvider.validateToken(token));
+    }
+
+    /**
+     * Creacion de un usuario para la API
+     * @param request
+     * @return
+     */
+    public Mono<Usuario> registrarUsuario(AuthRequestDTO request) {
+        Usuario nuevoUsuario = Usuario.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .build();
+
+        return usuarioRepository.save(nuevoUsuario);
     }
 }
