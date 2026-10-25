@@ -8,7 +8,7 @@ spring:
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/novabank_usuarios # Base de datos de PostgreSQL
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:root}
+    password: ${POSTGRES_PASSWORD}
     
 eureka:
   client:
@@ -16,7 +16,7 @@ eureka:
       defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/ # URL del Eureka Server
 
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  secret: ${JWT_SECRET}
   expiration: 86400000
   
 springdoc:
