@@ -1,5 +1,7 @@
 # NovaBank - Plataforma de Microservicios Reactivos (Módulo 5)
 
+[![CI](https://github.com/jlangon187/NovaBank/actions/workflows/ci.yml/badge.svg)](https://github.com/jlangon187/NovaBank/actions/workflows/ci.yml)
+
 NovaBank es un backend bancario evolucionado desde una aplicación CLI hasta una plataforma de microservicios reactivos. El estado actual consolida una arquitectura no bloqueante basada en Spring WebFlux, Project Reactor, R2DBC, WebClient, Service Discovery, configuración centralizada, seguridad JWT y resiliencia ante fallos parciales.
 
 ## 1. Contexto de migración
@@ -51,6 +53,10 @@ El README mantiene el histórico de la evolución técnica del proyecto para ref
 | Base de datos testing | <img src="https://img.shields.io/badge/H2_R2DBC-Testing-003545?style=flat-square" alt="H2 R2DBC" /> | Pruebas reactivas en memoria sin Docker/Testcontainers. |
 | Testing histórico | <img src="https://img.shields.io/badge/JUnit5_+_Mockito_+_MockMvc_+_WireMock-Módulo_4-25A162?style=flat-square&logo=junit5&logoColor=white" alt="Testing histórico" /> | Unit, slice, integración y contrato en la etapa MVC/Feign. |
 | Testing reactivo | <img src="https://img.shields.io/badge/WebTestClient_+_StepVerifier_+_MockWebServer-Módulo_5-25A162?style=flat-square&logo=junit5&logoColor=white" alt="Testing reactivo" /> | Validación de endpoints WebFlux, flujos Reactor e integraciones externas. |
+| Build | <img src="https://img.shields.io/badge/Maven-Multi--módulo-C71A36?style=flat-square&logo=apachemaven&logoColor=white" alt="Maven" /> | Parent `pom.xml` con módulos por servicio. |
+| Contenedores | <img src="https://img.shields.io/badge/Docker_+_Docker_Compose-Stack_completo-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" /> | Dockerfile y `compose.yaml` para levantar todos los servicios y PostgreSQL. |
+| Integración continua | <img src="https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions" /> | Ejecuta los tests en cada pull request y en cada push a `main`. |
+| Configuración y secretos | <img src="https://img.shields.io/badge/Variables_de_entorno-.env-4A5568?style=flat-square" alt="Variables de entorno" /> | Credenciales y JWT externalizados; plantilla en `.env.example`. |
 
 ## 4. Diagramas de arquitectura
 
