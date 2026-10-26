@@ -5,13 +5,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JwtServiceTest {
 
     private JwtService jwtService;
-    private final String SECRET = "REMOVED_REVOKED_JWT_SECRET"; // Base64 key
+    private static final String SECRET = generateTestSecret();
+    private static String generateTestSecret() {
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        return Base64.getEncoder().encodeToString(key);
+    }
     private final long EXPIRATION = 3600000;
 
     @BeforeEach
