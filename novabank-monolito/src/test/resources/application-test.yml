@@ -15,7 +15,7 @@ spring:
     console:
       enabled: true
 jwt:
-  secret: supersecretjwtkeyfornovabanktestingpurposesonlyandshouldnotbeusedinproduction
+  secret: ${JWT_SECRET}
   expiration: 3600000
 
 novabank:
