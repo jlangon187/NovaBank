@@ -21,3 +21,7 @@ jobs:
 
       - name: Run tests
         run: mvn -B -ntp -pl cliente-service,cuenta-service,operacion-service -am test
+        env:
+          SPRING_CLOUD_CONFIG_ENABLED: "false"
+          SPRING_CONFIG_IMPORT: "optional:configserver:"
+          EUREKA_CLIENT_ENABLED: "false"
